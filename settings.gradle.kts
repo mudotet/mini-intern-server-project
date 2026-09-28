@@ -1,1 +1,1 @@
-rootProject.name = "mini-intern-server-project"
+rootProject.name = "mini-game-server"

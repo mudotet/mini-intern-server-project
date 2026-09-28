@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package game.app;
+
+option java_package = "com.game.server.proto";
+option java_outer_classname = "CommonLoginContract";
+
+message CommonLoginRequest {
+  string request_id = 1;
+  string device_id = 2;
+  optional string account_id = 3;
+  string platform = 4;
+  string identifier = 5;
+  string client_version = 6;
+}
+
+message CommonLoginResponse {
+  string account_id = 1;
+  string player_id = 2;
+  string device_id = 3;
+  string access_token = 4;
+  int64 session_expires_at = 5;
+  bool new_account = 6;
+}

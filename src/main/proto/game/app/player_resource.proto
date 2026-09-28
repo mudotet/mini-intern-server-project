@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package game.app;
+
+import "game/model/player.proto";
+import "game/model/resource.proto";
+import "game/model/inventory.proto";
+
+option java_package = "com.game.server.proto";
+option java_outer_classname = "PlayerResourceContract";
+
+message PlayerResourceInitRequest {
+  optional string player_id = 1;
+}
+
+message PlayerResourceInitResponse {
+  game.model.PlayerProfile profile = 1;
+  repeated game.model.Resource resources = 2;
+  repeated game.model.InventoryItem inventory_items = 3;
+  string contract_version = 4;
+  string configuration_version = 5;
+}

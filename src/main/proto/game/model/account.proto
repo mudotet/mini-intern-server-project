@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package game.model;
+
+option java_package = "com.game.server.proto";
+option java_outer_classname = "AccountModel";
+
+message Account {
+  string account_id = 1;
+}

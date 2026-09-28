@@ -20,6 +20,3 @@ docker/data/dynamo/*.db
 # Understand Anything generated analysis artifacts
 .ua/
 .understand-anything/
-
-# Local documentation
-/docs/
