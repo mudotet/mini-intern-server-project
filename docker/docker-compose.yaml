@@ -1,0 +1,41 @@
+version: "3"
+services:
+
+  redis:
+    build:
+      context: ../
+      dockerfile: docker/redis/Dockerfile
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+  dynamodb:
+    build:
+      context: ../
+      dockerfile: docker/dynamodb/Dockerfile
+    user: root
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/dynamo:/home/dynamodblocal/data
+
+  application:
+    build:
+      context: ../
+      args:
+        config_file: "application.conf"
+      dockerfile: docker/application/Dockerfile
+    depends_on:
+      - redis
+      - dynamodb
+    ports:
+      - "9000:8080"
+  worker:
+    build:
+      context: ../
+      args:
+        config_file: "application.conf"
+      dockerfile: docker/worker/Dockerfile
+    depends_on:
+      - redis
+      - dynamodb

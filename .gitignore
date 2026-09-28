@@ -1,0 +1,25 @@
+.idea
+.idea_modules
+*.iml
+.env
+
+logs
+target
+build
+/out
+/.classpath
+/.project
+/.settings
+/.gradle
+/RUNNING_PID
+
+docker/redis/dump.rdb
+docker/data/redis/dump.rdb
+docker/data/dynamo/*.db
+
+# Understand Anything generated analysis artifacts
+.ua/
+.understand-anything/
+
+# Local documentation
+/docs/

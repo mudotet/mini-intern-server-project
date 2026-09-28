@@ -1,0 +1,1 @@
+rootProject.name = "mini-intern-server-project"
