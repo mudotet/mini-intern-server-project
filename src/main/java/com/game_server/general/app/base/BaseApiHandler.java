@@ -5,6 +5,9 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.StatusCodes;
 import akka.stream.Materializer;
+import com.game.server.proto.ErrorContract;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -65,7 +68,30 @@ public abstract class BaseApiHandler implements AppHandler {
         }
     }
 
-    protected abstract CompletionStage<ApiResult> process(HttpRequest request, Materializer materializer);
+    public final HttpResponse processHttp(byte[] body) {
+        return processBody(body).toResponse(null);
+    }
+
+    protected CompletionStage<ApiResult> process(HttpRequest request, Materializer materializer) {
+        return request.entity().toStrict(5_000, materializer)
+                .thenApply(entity -> processBody(entity.getData().toArray()));
+    }
+
+    protected Message process(byte[] body) throws InvalidProtocolBufferException {
+        throw new UnsupportedOperationException("Handler must implement a process method");
+    }
+
+    private ApiResult processBody(byte[] body) {
+        try {
+            return ApiResult.success(process(body));
+        } catch (InvalidProtocolBufferException | IllegalArgumentException exception) {
+            return ApiResult.response(StatusCodes.BAD_REQUEST,
+                    ErrorContract.AuthErrorProto.newBuilder().setMessage("Invalid login request").build());
+        } catch (IllegalStateException exception) {
+            return ApiResult.response(StatusCodes.CONFLICT,
+                    ErrorContract.AuthErrorProto.newBuilder().setMessage("Device or player identity does not match").build());
+        }
+    }
 
     protected boolean verifyAuth(HttpRequest request, ApiHandler api) {
         return verifyAuth(api) || authenticate(request);
