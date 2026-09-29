@@ -3,6 +3,7 @@ package com.game_server.general.app.handler.common;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.model.HttpResponse;
 import akka.util.ByteString;
+import com.game.server.proto.CommonInitContract;
 import com.game.server.proto.CommonLoginContract;
 import com.game_server.general.app.helper.JwtHelper;
 import java.util.Map;
@@ -20,6 +21,26 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class LoginHandlerTest {
+    @Test
+    void initReturnsPublicMetadataWithoutStorage() throws Exception {
+        ActorSystem system = ActorSystem.create("init-test");
+        try {
+            HttpResponse result = new InitHandler().processHttp(CommonInitContract.CommonInitRequest.getDefaultInstance().toByteArray());
+            assertEquals(200, result.status().intValue());
+            ByteString body = result.entity().getDataBytes()
+                    .runFold(ByteString.fromArray(new byte[0]), ByteString::concat, system)
+                    .toCompletableFuture().get(5, TimeUnit.SECONDS);
+            CommonInitContract.CommonInitResponseProto init = CommonInitContract.CommonInitResponseProto.parseFrom(body.toArray());
+            assertTrue(init.getServerTime() > 0);
+            assertFalse(init.getContractVersion().isBlank());
+            assertFalse(init.getConfigurationVersion().isBlank());
+            assertFalse(init.getMinimumClientVersion().isBlank());
+            assertFalse(init.getMaintenance());
+        } finally {
+            system.terminate();
+        }
+    }
+
     @Test
     void createsAndRecoversDeviceWithoutTrustingPlayerId() throws Exception {
         DynamoDbClient dynamodb = mock(DynamoDbClient.class);
@@ -51,8 +72,10 @@ class LoginHandlerTest {
                     .setDeviceId("known").setPlayerId("other").build().toByteArray());
             assertEquals(409, mismatch.status().intValue());
             assertEquals(400, handler.processHttp(new byte[] {(byte) 0xff}).status().intValue());
-            assertEquals(409, handler.processHttp(CommonLoginContract.CommonLoginRequestProto.newBuilder()
-                    .setDeviceId("unknown").build().toByteArray()).status().intValue());
+            CommonLoginContract.CommonLoginResponseProto suppliedDevice = response(handler, system,
+                    CommonLoginContract.CommonLoginRequestProto.newBuilder().setDeviceId("unknown").build());
+            assertEquals("unknown", suppliedDevice.getDeviceId());
+            assertFalse(suppliedDevice.getPlayerId().isBlank());
         } finally {
             system.terminate();
         }

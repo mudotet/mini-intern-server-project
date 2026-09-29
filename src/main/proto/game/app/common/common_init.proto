@@ -2,13 +2,15 @@ syntax = "proto3";
 
 package game.app;
 
-import "game/model/player.proto";
-
 option java_package = "com.game.server.proto";
 option java_outer_classname = "CommonInitContract";
 
 message CommonInitRequest {}
 
 message CommonInitResponseProto {
-  game.model.PlayerProto player = 1;
+  int64 server_time = 1;
+  string contract_version = 2;
+  string configuration_version = 3;
+  string minimum_client_version = 4;
+  bool maintenance = 5;
 }
