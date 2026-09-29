@@ -3,7 +3,7 @@
 environment_variable_files = [".env"]
 
 [scripts]
-setup = "./gradlew --no-daemon build"
-run = './gradlew --no-daemon run'
+setup = "./gradlew --no-daemon --console=plain build"
+run = "./gradlew --no-daemon --console=plain run"
 archive = "true"
 run_mode = "nonconcurrent"
