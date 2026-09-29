@@ -28,4 +28,7 @@ message CommonLoginResponseProto {
   string odl = 2;
   string odb = 3;
   string device_id = 4;
+  string player_id = 5;
+  string access_token = 6;
+  int64 session_expires_at = 7;
 }
