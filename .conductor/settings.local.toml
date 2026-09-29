@@ -1,7 +1,9 @@
 "$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
 
+environment_variable_files = [".env"]
+
 [scripts]
-setup = "./gradlew --no-daemon --console=plain generateProto"
-run = "./gradlew --no-daemon --console=plain check"
+setup = "./gradlew --no-daemon --console=plain build"
+run = "./gradlew --no-daemon --console=plain run"
 archive = "true"
-run_mode = "concurrent"
+run_mode = "nonconcurrent"
