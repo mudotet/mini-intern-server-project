@@ -3,6 +3,7 @@ package com.game_server.general.app.handler.common;
 import com.game.server.proto.CommonLoginContract;
 import com.game_server.general.app.base.ApiHandler;
 import com.game_server.general.app.base.BaseApiHandler;
+import com.game_server.general.app.handler.ApiCodes;
 import com.game_server.general.app.helper.JwtHelper;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
@@ -24,7 +25,7 @@ import software.amazon.awssdk.services.dynamodb.model.BillingMode;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException;
 
-@ApiHandler(value = "001002", auth = false, lock = false, blueprint = false)
+@ApiHandler(value = ApiCodes.COMMON_LOGIN, auth = false, lock = false, blueprint = false)
 public final class LoginHandler extends BaseApiHandler {
     private static final String TABLE = "login_devices";
     private static final int SESSION_SECONDS = 12 * 60 * 60;
@@ -62,7 +63,7 @@ public final class LoginHandler extends BaseApiHandler {
                 .key(Map.of("device_id", AttributeValue.fromS(deviceId))).consistentRead(true).build()).item();
         String playerId;
         if (item.isEmpty()) {
-            if (!newDevice || !request.getPlayerId().isBlank()) {
+            if (!request.getPlayerId().isBlank()) {
                 throw new IllegalStateException("Unknown device");
             }
             playerId = UUID.randomUUID().toString();
