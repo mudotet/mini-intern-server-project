@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package game.common;
+
+option java_package = "com.game.server.proto";
+option java_outer_classname = "ErrorContract";
+
+message InputInvalidErrorProto {
+  repeated string fields = 1;
+}
+
+message InsufficientResourceErrorProto {
+  repeated string resources = 1;
+}
+
+message MaintenanceErrorProto {
+  bool global = 1;
+  int64 start = 2;
+  int64 end = 3;
+  string message = 4;
+}
+
+message UpdateErrorProto {
+  string message = 1;
+  string update_game_title = 2;
+  string text_upgrade = 3;
+  string text_support = 4;
+  string text_user_id = 5;
+  string ios_url = 6;
+  string android_url = 7;
+  string steam_url = 8;
+  string epic_url = 9;
+}
+
+message AuthErrorProto {
+  string message = 1;
+}
+
+message LockErrorProto {
+  string type = 1;
+  string target = 2;
+}
+
+message IgnoreErrorProto {
+  string type = 1;
+}
+
+message SignErrorProto {
+  string message = 1;
+}
+
+message BusinessErrorProto {
+  string code = 1;
+}

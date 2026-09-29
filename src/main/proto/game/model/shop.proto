@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package game.model;
+
+option java_package = "com.game.server.proto";
+option java_outer_classname = "ShopModel";
+option csharp_namespace = "Game.Server.Proto";
+
+import "game/blueprint/shop.proto";
+
+message ShopPackageProto {
+  string id = 1;
+  int32 purchased = 2;
+  int64 start = 3;
+}
+
+// Resolved user data, kept unchanged until expires_at. No request/server time.
+message ShopDailySnapshotProto {
+  int64 cycle_start = 1;
+  int64 expires_at = 2;
+  repeated ShopDailySlotSnapshotProto slots = 3;
+  int32 schema_version = 4;
+}
+
+message ShopDailySlotSnapshotProto {
+  string slot_id = 1;
+  ShopDailyOfferSnapshotProto offer = 2;
+}
+
+message ShopDailyOfferSnapshotProto {
+  string offer_id = 1;
+  string package_id = 2;
+  string category = 3;
+  game.blueprint.ShopPackage.Price original_price = 4;
+  game.blueprint.ShopPackage.Price final_price = 5;
+  int32 discount_percent = 6;
+  map<string, int32> items = 7;
+  game.blueprint.ShopOfferDisplay display = 8;
+  int32 purchased = 9;
+  int32 remaining = 10;
+}

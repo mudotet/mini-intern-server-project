@@ -4,8 +4,48 @@ package game.model;
 
 option java_package = "com.game.server.proto";
 option java_outer_classname = "ResourceModel";
+option csharp_namespace = "Game.Server.Proto";
 
 message Resource {
   string resource_id = 1;
   int64 quantity = 2;
+}
+
+message ResourceProto {
+  int32 type = 1;
+  bytes data = 2;
+}
+
+// type = 0
+message CurrencyResourceProto {
+  string name = 1;
+  int32 amount = 2;
+
+  // update
+  //
+  // currency last update time (available for auto-generate currency only)
+  int64 update = 3;
+}
+
+// type = 1
+message XpResourceProto {
+  int32 amount = 1;
+}
+
+// type = 2
+message GachaResourceProto {
+  string id = 1;
+  repeated ResourceProto items = 2;
+}
+
+// type = 3
+message ChestResourceProto {
+  string id = 1;
+  repeated ResourceProto items = 2;
+}
+
+// type = 4
+message RbeResourceProto {
+  string token = 1;
+  int32 amount = 2;
 }

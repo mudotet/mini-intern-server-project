@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package game.app;
+
+option java_package = "com.game.server.proto";
+option csharp_namespace = "Game.Server.Proto";
+
+message ShopPreIapResponseProto {
+  string token = 1;
+}

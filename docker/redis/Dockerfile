@@ -1,4 +1,3 @@
-FROM ubuntu:latest
-LABEL authors="tupt"
+FROM redis:7-alpine
 
-ENTRYPOINT ["top", "-b"]
+CMD ["redis-server", "--appendonly", "yes"]

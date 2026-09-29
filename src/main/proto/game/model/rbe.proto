@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package game.model;
+
+option java_package = "com.game.server.proto";
+option csharp_namespace = "Game.Server.Proto";
+
+message RbeEventProto {
+  string id = 1;
+  repeated RbeTaskProto tasks = 2;
+  RbeCompetitiveProto competitive = 3;
+  int64 completed = 4;
+}
+
+message RbeTaskProto {
+  // id
+  //
+  // task id
+  string id = 1;
+
+  // progress
+  //
+  // task progress
+  int32 progress = 2;
+
+  // reward
+  //
+  // reward claimed time
+  int64 reward = 3;
+}
+
+message RbeCompetitiveProto {
+  // score
+  //
+  // competitive score
+  int32 score = 1;
+
+  // rank
+  //
+  // leaderboard rank
+  int32 rank = 2;
+
+  // reward
+  //
+  // claimed reward time
+  int64 reward = 3;
+}

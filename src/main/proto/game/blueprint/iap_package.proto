@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package game.blueprint;
+
+option java_package = "com.game.server.proto";
+option csharp_namespace = "Game.Server.Proto";
+
+message IapPackageBlueprint {
+  repeated IapPackageItem packages = 1;
+}
+
+message IapPackageItem {
+  string name = 1;
+  string google_product = 2;
+  string apple_product = 3;
+  IapPackageItemType type = 4;
+  int32 price = 5;
+}
+
+enum IapPackageItemType {
+  CONSUMABLE = 0;
+  SUBSCRIPTION = 1;
+}

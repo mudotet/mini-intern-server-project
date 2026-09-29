@@ -17,7 +17,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./data/dynamo:/home/dynamodblocal/data
+      - ./data/dynamodb:/home/dynamodblocal/data
 
   application:
     build:

@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package game.app;
+
+option java_package = "com.game.server.proto";
+option java_outer_classname = "CommonBlueprintContract";
+
+message CommonBlueprintRequestProto {
+  // blueprints title
+  //
+  // blueprints description
+  repeated string blueprints = 1;
+}
+
+message CommonBlueprintResponseProto {
+  map<string, bytes> blueprints = 1;
+}

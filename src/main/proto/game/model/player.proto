@@ -4,7 +4,59 @@ package game.model;
 
 option java_package = "com.game.server.proto";
 option java_outer_classname = "PlayerModel";
+option csharp_namespace = "Game.Server.Proto";
+
+import "game/model/resource.proto";
+import "game/model/rbe.proto";
+import "game/model/shop.proto";
 
 message PlayerProfile {
   string player_id = 1;
+}
+
+message PlayerProto {
+  // id
+  //
+  // player id
+  string id = 1;
+  // name
+  //
+  // visual name of player
+  string name = 2;
+  // xp
+  //
+  // player exp
+  int32 xp = 3;
+
+  // resource
+  //
+  // player currency resources
+  repeated game.model.CurrencyResourceProto resource = 4;
+  // shop
+  //
+  // player shop history
+  repeated game.model.ShopPackageProto shop = 5;
+  // rbe
+  //
+  // player rbe events
+  repeated game.model.RbeEventProto rbe_event = 6;
+  // segment
+  //
+  // player segments
+  repeated string segment = 7;
+}
+
+message PlayerInfoProto {
+  // id
+  //
+  // player id
+  string id = 1;
+  // name
+  //
+  // visual name of player
+  string name = 2;
+  // xp
+  //
+  // player exp
+  int32 xp = 3;
 }

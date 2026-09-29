@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package game.app;
+
+import "game/model/player.proto";
+
+option java_package = "com.game.server.proto";
+option java_outer_classname = "CommonInitContract";
+
+message CommonInitRequest {}
+
+message CommonInitResponseProto {
+  game.model.PlayerProto player = 1;
+}

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package game.app;
+
+option java_package = "com.game.server.proto";
+option csharp_namespace = "Game.Server.Proto";
+
+message ShopPurchaseRequestProto {
+  string id = 1;
+  int32 amount = 2;
+}

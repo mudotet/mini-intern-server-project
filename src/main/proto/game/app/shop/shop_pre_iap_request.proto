@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package game.app;
+
+option java_package = "com.game.server.proto";
+option csharp_namespace = "Game.Server.Proto";
+
+message ShopPreIapRequestProto {
+  string shop_id = 1;
+  string iap_id = 2;
+  // store
+  //
+  // store type (TEST, GOOGLE, APPLE)
+  IapStore store = 3;
+
+  enum IapStore {
+    TEST = 0;
+    GOOGLE = 1;
+    APPLE = 2;
+  }
+}

@@ -1,4 +1,3 @@
-FROM ubuntu:latest
-LABEL authors="tupt"
+FROM amazon/dynamodb-local:2.6.1
 
-ENTRYPOINT ["top", "-b"]
+CMD ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "./data"]

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package game.app;
+
+import "game/model/resource.proto";
+
+option java_package = "com.game.server.proto";
+option csharp_namespace = "Game.Server.Proto";
+
+message ShopPurchaseResponseProto {
+  repeated game.model.ResourceProto items = 1;
+}

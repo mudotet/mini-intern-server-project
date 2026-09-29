@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package game.app;
+
+option java_package = "com.game.server.proto";
+option csharp_namespace = "Game.Server.Proto";
+
+import "game/blueprint/shop.proto";
+
+// Daily Shop response.
+message ShopDailyProtoResponse {
+  // Start time of the current cycle, in Unix seconds.
+  // The cycle includes cycle_start and excludes expires_at.
+  int64 cycle_start = 1;
+
+  // End time of the current cycle, in Unix seconds.
+  // expires_at equals cycle_start plus cycle_duration_seconds.
+  int64 expires_at = 2;
+
+  // Slots are returned in configured display order.
+  repeated ShopDailySlotResponse slots = 3;
+
+  // Current server time, in Unix seconds.
+  int64 server_time = 4;
+
+  // True when purchased and remaining contain initial values
+  // instead of values derived from the player's purchase history.
+  bool stock_is_initial = 6;
+}
+
+
+message ShopDailySlotResponse {
+  // Matches DailyShopSlotConfig.slot_id.
+  string slot_id = 1;
+
+  DailyOfferProto offer = 2;
+}
+
+
+message DailyOfferProto {
+  // Unique offer identifier within the current cycle.
+  // Recommended format: cycle_start:slot_id:package_id.
+  string offer_id = 1;
+
+  // References ShopPackage.id.
+  string package_id = 2;
+
+  string category = 3;
+
+  // Package price before the selected Daily Shop discount.
+  game.blueprint.ShopPackage.Price original_price = 4;
+
+  // Authoritative price after applying discount_percent.
+  game.blueprint.ShopPackage.Price final_price = 5;
+
+  map<string, int32> items = 6;
+  game.blueprint.ShopOfferDisplay display = 7;
+
+  // Discount selected by the server for this offer and cycle.
+  // A value of 0 means no discount.
+  int32 discount_percent = 8;
+
+  // Number of purchases made during the current cycle.
+  int32 purchased = 9;
+
+  // Number of purchases still available during the current cycle.
+  int32 remaining = 10;
+}
