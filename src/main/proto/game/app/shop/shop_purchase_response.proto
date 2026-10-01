@@ -1,12 +1,14 @@
 syntax = "proto3";
-
 package game.app;
-
-import "game/model/resource.proto";
-
 option java_package = "com.game.server.proto";
 option csharp_namespace = "Game.Server.Proto";
+import "game/model/resource.proto";
 
+// Receipt returned by the purchase endpoint and its retries.
 message ShopPurchaseResponseProto {
-  repeated game.model.ResourceProto items = 1;
+  // Reward quantities granted by this purchase.
+  repeated game.model.Resource items = 1;
+  // Player resource balances after this purchase.
+  repeated game.model.Resource resources = 2;
+  string offer_id = 3;
 }

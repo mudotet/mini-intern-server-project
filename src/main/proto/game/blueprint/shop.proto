@@ -1,113 +1,68 @@
 syntax = "proto3";
-
 package game.blueprint;
-
 option java_package = "com.game.server.proto";
 option java_outer_classname = "ShopBlueprintContract";
 option csharp_namespace = "Game.Server.Proto";
 
-
 message ShopBlueprint {
-  // Product definitions shared by Static Shop and Daily Shop.
   repeated ShopPackage packages = 1;
-
-  // Daily Shop configuration. Field 2 is preserved for wire compatibility.
   DailyShopConfig daily = 2;
-
-  // Static Shop configuration shared by every player.
   StaticShopConfig static_shop = 3;
 }
 
-
-// Shared package configuration.
+// Shared product definition. Static uses items; daily resolves quantity ranges.
 message ShopPackage {
   string id = 1;
-  string category = 2;
+  reserved 2, 5, 6, 7;
+  reserved "category", "schedule", "stock", "display";
   Price price = 3;
+  // Default rewards for StaticShop, keyed by resource ID (gold/gem/xp).
   map<string, int32> items = 4;
-  reserved 5;
-  reserved "schedule";
-  Stock stock = 6;
-  ShopOfferDisplay display = 7;
+  // Same resource IDs as items; positive inclusive min/max for DailyShop.
+  map<string, RewardQuantityRange> daily_reward_ranges = 8;
 
   message Price {
+    // Demo packages use exactly one positive gold or gem price.
     map<string, int32> currency = 1;
-    string iap = 2;
-  }
-
-  message Stock {
-    int32 limit = 1;
-    bool reset = 2;
+    reserved 2;
+    reserved "iap";
   }
 }
 
-
-message ShopOfferDisplay {
-  string title_key = 1;
-  string image_key = 2;
-  int32 value_badge_percent = 3;
+message RewardQuantityRange {
+  int32 min = 1;
+  int32 max = 2;
 }
 
-
-// Static Shop configuration shared by every player.
 message StaticShopConfig {
-  // Repeated-field order determines display order.
   repeated StaticShopSlotConfig slots = 1;
 }
-
-
 message StaticShopSlotConfig {
-  // Stable identifier for this display position.
   string slot_id = 1;
-
-  // References ShopPackage.id.
   string package_id = 2;
 }
 
-
-// Daily Shop configuration.
 message DailyShopConfig {
-  // Start time of the first cycle, in Unix seconds.
+  // Unix seconds aligned to 00:00 Asia/Ho_Chi_Minh.
   int64 cycle_anchor = 1;
-
-  // Duration of each cycle, in seconds. For example, 86400 means 24 hours.
+  // Demo: 86400 seconds.
   int32 cycle_duration_seconds = 2;
-
-  // Slots to fill for every player. Repeated-field order determines display order.
+  // Demo: exactly three distinct slot IDs.
   repeated DailyShopSlotConfig slots = 3;
-
-  // Candidate pool used to fill slots for each player and cycle.
-  // The resolver must select without replacement so a package cannot appear
-  // in more than one slot in the same response.
+  // Select three distinct package IDs uniformly without replacement.
   repeated DailyPackageCandidate candidates = 4;
+  // Demo: three purchases per offer; never applied to StaticShop.
+  int32 purchase_limit = 5;
+  // Demo: [10, 20, 30], selected uniformly once per offer/cycle.
+  repeated int32 discount_percentages = 6;
 }
-
-
 message DailyShopSlotConfig {
-  // Stable identifier for this display position.
   string slot_id = 1;
-
   reserved 2, 3;
   reserved "package_id", "discount_options";
 }
-
-
 message DailyPackageCandidate {
-  // References ShopPackage.id. Candidate package IDs must be unique.
   string package_id = 1;
-
-  // Positive relative weight used when selecting a package for a slot.
-  int32 selection_weight = 2;
-
-  // Discount choices used only when this package is selected for Daily Shop.
-  repeated DiscountOption discount_options = 3;
-}
-
-
-message DiscountOption {
-  // Discount percentage from 0 to 99. A value of 0 means no discount.
-  int32 percent = 1;
-
-  // Positive relative selection weight.
-  int32 weight = 2;
+  reserved 2, 3;
+  reserved "selection_weight", "discount_options";
 }

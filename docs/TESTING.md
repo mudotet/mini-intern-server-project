@@ -1,100 +1,34 @@
-# Testing Strategy
+# Kiểm tra demo
 
-## Principles
+Dùng Java 11:
 
-Tests verify observable Slice 1 behavior at the smallest practical boundary. Domain and application tests avoid Akka and infrastructure dependencies; transport tests verify HTTP, Protobuf, authentication, and ApiError mapping. Tests use deterministic clocks and identity/token generators where expiration or repeatability matters.
+```bash
+./gradlew test
+docker compose -f docker/docker-compose.yaml up -d
+./gradlew integrationTest
+```
 
-## Unit Tests
+test chạy 9 unit/route test: HTTP/content type/request ID/auth hook, Swagger HTML/OpenAPI/assets, Resource Init không refill, daily ranges/discount/Vietnam midnight và validation mua.
 
-Unit tests cover pure mapping, validation, domain rules, token claim handling, and service branches with in-memory or test-double ports. They verify outcomes without network or external infrastructure.
+integrationTest chạy 14 test qua HTTP socket thật với Redis + DynamoDB Local:
 
-Key cases include:
+- Login retry/recovery, Account ownership, JWT giả/hết hạn, Session bị thay thế/mất.
+- Login đồng thời chỉ tạo một identity và cấp tài nguyên một lần.
+- Daily đọc đồng thời giữ cùng snapshot; static ổn định.
+- Daily mua 3 lần, lần 4 từ chối; giá/reward/discount giữ nguyên.
+- Replay receipt không ghi state lần hai; RequestId/input khác bị từ chối.
+- Request cạnh tranh lượt cuối hoặc số gold cuối chỉ một thành công.
+- Bốn request mua giống nhau chỉ ghi một lần.
+- Static mua hơn 3 lần; thiếu tiền và amount sai bị từ chối; Init không refill.
+- Clock tới nửa đêm tạo cycle mới; offer cũ không mua được.
+- Restart HTTP server/handler/DAO giữ identity, Resource, snapshot và receipt.
+- JSON Login → Init → Shop → Purchase, lỗi JSON/auth/conflict và replay cùng receipt qua JSON/Protobuf.
+- GET thông tin đọc đúng Player hiện tại, Resource sau mua và Package; không ghi version/snapshot, không chọn Player khác qua query.
+- GET yêu cầu JWT/Session hợp lệ, không nhận body hoặc POST; GET không thể mua.
+- Session info đếm thời gian bằng Clock; Session cũ/bị mất hoặc JWT hết hạn trả 401, không trả credentials.
 
-- Required login field validation.
-- Supplied Account identity validation.
-- New versus existing Device decisions.
-- JWT claim construction and expiration decisions.
-- ApiError mapping without internal detail leakage.
-- Protobuf-to-application and application-to-Protobuf mapping.
+Mỗi test tạo bảng mini_test_<UUID> và prefix Redis riêng, rồi dọn đúng namespace đó. Không dùng bảng GAME_TABLE của app. Có thể đổi IT_DYNAMODB_ENDPOINT, IT_REDIS_HOST/PORT cho môi trường test local.
 
-## Service Integration Tests
+Đã chạy build integrationTest installDist ngày 2026-09-30: 9 unit + 14 integration pass sau khi thêm API thông tin, không skipped. Đây là DynamoDB Local, không chứng minh IAM/throttling/EC2/DynamoDB AWS.
 
-Application services run with the real in-memory implementations of `AccountStore`, `DeviceStore`, `PlayerStore`, `SessionStore`, and `IdempotencyStore`. These tests verify interactions across ports while remaining process-local.
-
-They cover identity creation, existing Device recovery, Session creation or refresh, stored idempotent results, and authenticated Player state reads.
-
-## API Behavior Tests
-
-API tests exercise Akka HTTP routes with encoded requests and decoded responses. They verify paths, methods, authentication requirements, status behavior, Protobuf payloads, and stable ApiError responses. They do not require Redis, DynamoDB, SQS, or AWS.
-
-## Protobuf and Contract Tests
-
-- All schema files compile with Protocol Buffers 3.21.3.
-- Generated classes use `com.game.server.proto`.
-- Fixtures round-trip without losing defined data.
-- App, model, and common schemas respect their dependency boundaries.
-- Removed published fields retain reserved names and numbers.
-- Endpoint responses expose only documented fields and stable error contracts.
-
-Buf lint and breaking checks are future optional tooling unless configuration is added.
-
-## Acceptance Tests
-
-### Init
-
-- `POST /api/001003` succeeds without JWT.
-- Response contains server time, contract version, configuration version, minimum client version, and maintenance status.
-- No Account, Player, Device, or Session is created.
-
-### Login
-
-- A new Device without Account ID creates exactly one Account, Player, and Device.
-- The response returns their IDs, access token, Session expiration, and `new_account = true`.
-- An existing Device recovers the same Account and Player.
-- A supplied matching Account ID is accepted.
-- A supplied conflicting Account ID returns `ACCOUNT_ID_MISMATCH` and changes no identity state.
-
-### Login Idempotency
-
-- Repeating the same RequestId returns the original login result.
-- The retry creates no duplicate Account, Player, Device, or Session result.
-- A new RequestId for an existing Device creates or refreshes the Session.
-- Concurrent handling of the same RequestId resolves to one stored result.
-
-### JWT and Session
-
-- A valid JWT exposes matching `account_id`, `player_id`, `device_id`, and `expires_at` claims.
-- Missing, malformed, tampered, or unknown-session JWTs return `UNAUTHORIZED`.
-- Expired JWTs or Sessions return `SESSION_EXPIRED`.
-- Tokens and signing secrets never appear in error payloads.
-
-### Player Resource Initialization
-
-- `POST /api/002007` rejects requests without a valid JWT.
-- A valid JWT returns only its Player profile, Resources, and InventoryItems plus contract and configuration versions.
-- Request-body Player identity cannot select another Player.
-- Calling the endpoint does not mutate gameplay state.
-- Missing authenticated Player state returns `PLAYER_NOT_FOUND`.
-
-## Negative and Security Tests
-
-- Reject missing or malformed required fields.
-- Reject unverified identity conflicts.
-- Reject invalid signatures and altered JWT claims.
-- Reject expired authentication before Player data access.
-- Verify client errors contain no stack traces or infrastructure details.
-- Verify public init does not create identity state.
-- Verify repeated resource reads leave all stores unchanged.
-
-## Slice 1 Definition of Done
-
-Slice 1 is complete when:
-
-- The three documented endpoints meet their contracts.
-- Protobuf schemas compile and generated classes remain outside domain models.
-- Unit, service integration, API behavior, contract, acceptance, and negative/security tests pass through the Gradle test workflow.
-- Login retries are proven idempotent, including concurrent same-RequestId behavior.
-- Authenticated identity comes only from validated JWT and Session state.
-- Resource initialization is read-only.
-- No Redis, DynamoDB, SQS, AWS, shop, or purchase functionality is required.
-- Documentation matches the implemented behavior and all verification results are recorded before completion is claimed.
+[demo.sh](../scripts/demo.sh) gọi app đang chạy và in giá/reward/tài nguyên, không in JWT. Dùng DEMO_RESTART_LOCAL=1 bash scripts/demo.sh để restart app Docker local và so sánh Player/snapshot/receipt/Session trước và sau. Đổi ngày kiểm tra bằng Clock trong test; không có endpoint cheat.

@@ -13,9 +13,7 @@ build
 /.gradle
 /RUNNING_PID
 
-docker/redis/dump.rdb
-docker/data/redis/dump.rdb
-docker/data/dynamo/*.db
+docker/data/
 
 # Understand Anything generated analysis artifacts
 .ua/

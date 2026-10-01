@@ -1,13 +1,15 @@
 syntax = "proto3";
-
 package game.app;
-
 option java_package = "com.game.server.proto";
 option java_outer_classname = "PlayerInfoContract";
+import "game/model/resource.proto";
 
-message PlayerInfoRequestProto {
-  // player id
-  //
-  // target player
-  string id = 1;
+// Read-only responses. Identity comes from the validated JWT/Session.
+message PlayerProfileResponseProto {
+  string account_id = 1;
+  string player_id = 2;
+}
+message PlayerResourcesResponseProto {
+  string player_id = 1;
+  repeated game.model.Resource resources = 2;
 }

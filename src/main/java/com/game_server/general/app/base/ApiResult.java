@@ -9,6 +9,8 @@ import akka.http.javadsl.model.MediaTypes;
 import akka.http.javadsl.model.StatusCode;
 import akka.http.javadsl.model.StatusCodes;
 import com.google.protobuf.Message;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.util.JsonFormat;
 
 import java.util.Collections;
 import java.util.Objects;
@@ -60,12 +62,26 @@ public final class ApiResult {
     }
 
     public HttpResponse toResponse(String requestId) {
-        HttpResponse response = HttpResponse.create().withStatus(statusCode);
+        return toResponse(requestId, false);
+    }
+
+    public HttpResponse toResponse(String requestId, boolean json) {
+        HttpResponse response = HttpResponse.create().withStatus(statusCode)
+                .addHeader(HttpHeader.parse("Cache-Control", "no-store"));
         if (requestId != null && !requestId.isBlank()) {
             response = response.addHeader(HttpHeader.parse(BaseApiHandler.HEADER_ID, requestId));
         }
         if (data != null) {
-            response = response.withEntity(HttpEntities.create(CONTENT_TYPE, data.toByteArray()));
+            if (json) {
+                try {
+                    response = response.withEntity(HttpEntities.create(ContentTypes.APPLICATION_JSON,
+                            JsonFormat.printer().preservingProtoFieldNames().includingDefaultValueFields().print(data)));
+                } catch (InvalidProtocolBufferException invalid) {
+                    throw new IllegalStateException("Cannot serialize response", invalid);
+                }
+            } else {
+                response = response.withEntity(HttpEntities.create(CONTENT_TYPE, data.toByteArray()));
+            }
         }
         return response.addHeaders(headers);
     }

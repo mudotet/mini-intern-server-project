@@ -8,7 +8,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import java.time.Instant;
 
-@ApiHandler(value = ApiCodes.COMMON_INIT, auth = false, lock = false, blueprint = false)
+@ApiHandler(value = ApiCodes.COMMON_INIT, auth = false)
 public final class InitHandler extends BaseApiHandler {
     @Override
     protected Message process(byte[] body) throws InvalidProtocolBufferException {
