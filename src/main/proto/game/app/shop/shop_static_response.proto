@@ -1,31 +1,24 @@
 syntax = "proto3";
-
 package game.app;
-
 option java_package = "com.game.server.proto";
 option csharp_namespace = "Game.Server.Proto";
-
 import "game/blueprint/shop.proto";
 
-// Static Shop response.
 message ShopStaticProtoResponse {
   repeated ShopStaticSlotResponse slots = 1;
-
-  // Current server time, in Unix seconds.
   int64 server_time = 2;
 }
-
-
 message ShopStaticSlotResponse {
   string slot_id = 1;
   StaticOfferProto offer = 2;
 }
-
-
+// Transport view of a static package, always using its base price/default rewards.
 message StaticOfferProto {
+  // static:<package_id>
   string offer_id = 1;
-  string category = 2;
+  reserved 2, 5;
+  reserved "category", "display";
   game.blueprint.ShopPackage.Price price = 3;
   map<string, int32> items = 4;
-  game.blueprint.ShopOfferDisplay display = 5;
+  string package_id = 6;
 }

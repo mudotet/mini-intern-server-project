@@ -10,7 +10,11 @@ import akka.stream.Materializer;
 import akka.stream.SystemMaterializer;
 import com.game.server.proto.CommonLoginContract.CommonLoginRequestProto;
 import com.game.server.proto.CommonLoginContract.CommonLoginResponseProto;
-import com.game.server.proto.ErrorContract.AuthErrorProto;
+import com.game.server.proto.CommonInitContract;
+import com.game.server.proto.ErrorContract.BusinessErrorProto;
+import com.game_server.general.service.GameException;
+import com.game_server.general.app.handler.common.InitHandler;
+import com.game_server.general.app.handler.ApiCodes;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import org.junit.jupiter.api.AfterAll;
@@ -23,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BaseApiHandlerMergeTest {
     private static ActorSystem system;
@@ -38,6 +43,56 @@ class BaseApiHandlerMergeTest {
     static void stopActorSystem() throws Exception {
         system.terminate();
         system.getWhenTerminated().toCompletableFuture().get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void swaggerPageSpecAndAssetsAreServedFromTheApplication() throws Exception {
+        AppHandlerProvider provider = new AppHandlerProvider(List.of(new InitHandler()));
+        HttpResponse page = provider.routes().handler(system).apply(HttpRequest.create("/swagger/"))
+                .toCompletableFuture().get(5, TimeUnit.SECONDS);
+        assertEquals(200, page.status().intValue());
+        assertTrue(new String(body(page), java.nio.charset.StandardCharsets.UTF_8).contains("SwaggerUIBundle"));
+        HttpResponse spec = provider.routes().handler(system).apply(HttpRequest.create("/swagger/openapi.json"))
+                .toCompletableFuture().get(5, TimeUnit.SECONDS);
+        assertEquals(200, spec.status().intValue());
+        var document = com.google.gson.JsonParser.parseString(new String(body(spec), java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
+        assertEquals(10, document.getAsJsonObject("paths").size());
+        assertEquals("bearer", document.getAsJsonObject("components").getAsJsonObject("securitySchemes")
+                .getAsJsonObject("BearerAuth").get("scheme").getAsString());
+        HttpResponse bundle = provider.routes().handler(system).apply(HttpRequest.create("/swagger/assets/swagger-ui-bundle.js"))
+                .toCompletableFuture().get(5, TimeUnit.SECONDS);
+        assertEquals(200, bundle.status().intValue());
+        assertTrue(body(bundle).length > 1000);
+    }
+
+    @Test
+    void publicInitUsesTheRuntimeRouteWithContentTypeValidationAndRequestId() throws Exception {
+        AppHandlerProvider provider = new AppHandlerProvider(List.of(new InitHandler()));
+        HttpRequest request = HttpRequest.create("/api/" + ApiCodes.COMMON_INIT)
+                .withMethod(HttpMethods.POST)
+                .withEntity(HttpEntities.create(ApiResult.CONTENT_TYPE, new byte[0]))
+                .addHeader(HttpHeader.parse(BaseApiHandler.HEADER_ID, "merge-request-1"));
+
+        HttpResponse response = provider.routes().handler(system).apply(request)
+                .toCompletableFuture().get(5, TimeUnit.SECONDS);
+        assertEquals(200, response.status().intValue());
+        assertRequestId(response);
+        assertEquals("1", CommonInitContract.CommonInitResponseProto.parseFrom(body(response)).getContractVersion());
+
+        HttpResponse json = provider.routes().handler(system)
+                .apply(request.withEntity(HttpEntities.create(akka.http.javadsl.model.ContentTypes.APPLICATION_JSON, "{}")))
+                .toCompletableFuture().get(5, TimeUnit.SECONDS);
+        assertEquals(200, json.status().intValue());
+        assertRequestId(json);
+        assertEquals(akka.http.javadsl.model.ContentTypes.APPLICATION_JSON, json.entity().getContentType());
+        assertEquals("1", com.google.gson.JsonParser.parseString(new String(body(json), java.nio.charset.StandardCharsets.UTF_8))
+                .getAsJsonObject().get("contract_version").getAsString());
+
+        HttpResponse invalid = provider.routes().handler(system)
+                .apply(request.withEntity(HttpEntities.create(akka.http.javadsl.model.ContentTypes.TEXT_PLAIN_UTF8, "{}")))
+                .toCompletableFuture().get(5, TimeUnit.SECONDS);
+        assertEquals(400, invalid.status().intValue());
+        assertRequestId(invalid);
     }
 
     @Test
@@ -60,7 +115,7 @@ class BaseApiHandlerMergeTest {
         HttpResponse malformed = route(handler, request(handler, new byte[] {(byte) 0xff}));
         assertEquals(400, malformed.status().intValue());
         assertRequestId(malformed);
-        assertEquals("Invalid login request", AuthErrorProto.parseFrom(body(malformed)).getMessage());
+        assertEquals("INVALID_PROTOBUF", BusinessErrorProto.parseFrom(body(malformed)).getCode());
 
         HttpResponse invalidIdentity = route(handler, request(handler,
                 CommonLoginRequestProto.newBuilder().setDeviceId("invalid").build().toByteArray()));
@@ -71,8 +126,7 @@ class BaseApiHandlerMergeTest {
                 CommonLoginRequestProto.newBuilder().setPlayerId("mismatch").build().toByteArray()));
         assertEquals(409, mismatch.status().intValue());
         assertRequestId(mismatch);
-        assertEquals("Device or player identity does not match",
-                AuthErrorProto.parseFrom(body(mismatch)).getMessage());
+        assertEquals("IDENTITY_MISMATCH", BusinessErrorProto.parseFrom(body(mismatch)).getCode());
     }
 
     @Test
@@ -109,7 +163,7 @@ class BaseApiHandlerMergeTest {
     }
 
     private static HttpResponse route(BaseApiHandler handler, HttpRequest request) throws Exception {
-        return new AppHandlerProvider(List.of(handler)).processHttp(request, materializer)
+        return new AppHandlerProvider(List.of(handler)).routes().handler(system).apply(request)
                 .toCompletableFuture().get(5, TimeUnit.SECONDS);
     }
 
@@ -128,10 +182,10 @@ class BaseApiHandlerMergeTest {
         protected Message process(byte[] body) throws InvalidProtocolBufferException {
             CommonLoginRequestProto input = CommonLoginRequestProto.parseFrom(body);
             if (input.getDeviceId().equals("invalid")) {
-                throw new IllegalArgumentException("Invalid identity");
+                throw new GameException(400, "INVALID_IDENTITY", "Invalid identity");
             }
             if (input.getPlayerId().equals("mismatch")) {
-                throw new IllegalStateException("Player mismatch");
+                throw new GameException(409, "IDENTITY_MISMATCH", "Player mismatch");
             }
             return CommonLoginResponseProto.newBuilder().setDeviceId(input.getDeviceId()).build();
         }

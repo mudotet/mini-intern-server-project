@@ -8,18 +8,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface ApiHandler {
-
-    // request api
     String value();
 
+    String method() default "POST";
+
     boolean auth() default true;
-
-    // request require lock player data
-    boolean lock() default true;
-
-    // request need blueprint
-    boolean blueprint() default true;
-
-    // api feature category
-    String[] features() default {};
 }

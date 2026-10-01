@@ -1,8 +1,13 @@
 package com.game_server.general.app.base;
 
 import akka.http.javadsl.model.HttpRequest;
+import akka.http.javadsl.model.HttpMethods;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.StatusCodes;
+import akka.http.javadsl.model.Uri;
+import akka.http.javadsl.model.ContentTypes;
+import akka.http.javadsl.server.AllDirectives;
+import akka.http.javadsl.server.Route;
 import akka.stream.Materializer;
 
 import java.util.Collections;
@@ -12,7 +17,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public final class AppHandlerProvider implements AppHandler {
+public final class AppHandlerProvider extends AllDirectives implements AppHandler {
     private final Map<String, AppHandler> handlers;
 
     public AppHandlerProvider(Iterable<? extends AppHandler> handlers) {
@@ -31,13 +36,29 @@ public final class AppHandlerProvider implements AppHandler {
         this.handlers = Collections.unmodifiableMap(registered);
     }
 
+    public Route routes() {
+        return concat(
+                pathEndOrSingleSlash(() -> get(() -> redirect(Uri.create("/swagger/"), StatusCodes.TEMPORARY_REDIRECT))),
+                path("swagger", () -> get(() -> redirect(Uri.create("/swagger/"), StatusCodes.TEMPORARY_REDIRECT))),
+                pathPrefix("swagger", () -> get(() -> concat(
+                        pathEndOrSingleSlash(() -> getFromResource("swagger/index.html")),
+                        path("openapi.json", () -> getFromResource("swagger/openapi.json")),
+                        pathPrefix("assets", () -> getFromResourceDirectory("META-INF/resources/webjars/swagger-ui/5.32.15"))))),
+                extractRequest(request -> extractMaterializer(materializer ->
+                        completeWithFuture(processHttp(request, materializer)))));
+    }
+
     @Override
     public CompletionStage<HttpResponse> processHttp(HttpRequest request, Materializer materializer) {
         String api = apiFrom(request.getUri().path());
         AppHandler handler = handlers.get(api);
         if (handler == null) {
             return CompletableFuture.completedFuture(
-                    ApiResult.response(StatusCodes.NOT_FOUND).toResponse(requestId(request)));
+                    ApiResult.response(StatusCodes.NOT_FOUND,
+                            com.game.server.proto.ErrorContract.BusinessErrorProto.newBuilder()
+                                    .setCode("ROUTE_NOT_FOUND").setMessage("Unknown API route").build())
+                            .toResponse(requestId(request), request.method().equals(HttpMethods.GET) || request.entity().getContentType().mediaType()
+                                    .equals(ContentTypes.APPLICATION_JSON.mediaType())));
         }
         return handler.processHttp(request, materializer);
     }
@@ -48,7 +69,7 @@ public final class AppHandlerProvider implements AppHandler {
             return "";
         }
         String api = path.substring(prefix.length());
-        return api.isEmpty() || api.contains("/") ? "" : api;
+        return api;
     }
 
     private static String requestId(HttpRequest request) {

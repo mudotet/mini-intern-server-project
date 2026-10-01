@@ -9,26 +9,28 @@ message CommonLoginRequestProto {
   string player_id = 1;
   string device_id = 2;
   CommonLoginClientProto client = 3;
+  // Optional; if supplied, must belong to this device.
+  string account_id = 4;
 }
 
 message CommonLoginClientProto {
-  // platform
-  //
-  // platform
   string platform = 1;
 
   string identifier = 2;
   string version = 3;
 
-  map<string, string> misc = 5;
+  reserved 5;
+  reserved "misc";
 }
 
 message CommonLoginResponseProto {
-  string asset = 1;
-  string odl = 2;
-  string odb = 3;
+  reserved 1, 2, 3;
+  reserved "asset", "odl", "odb";
   string device_id = 4;
   string player_id = 5;
   string access_token = 6;
   int64 session_expires_at = 7;
+  // Account owns the returned player identity.
+  string account_id = 8;
+  bool new_account = 9;
 }

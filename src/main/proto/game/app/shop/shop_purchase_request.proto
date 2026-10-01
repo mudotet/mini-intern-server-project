@@ -1,11 +1,12 @@
 syntax = "proto3";
-
 package game.app;
-
 option java_package = "com.game.server.proto";
 option csharp_namespace = "Game.Server.Proto";
 
 message ShopPurchaseRequestProto {
+  // ID returned by the static or daily endpoint, never a client-supplied price.
+  // static:<package_id> or daily:<cycle_start>:<slot_id>:<package_id>.
   string id = 1;
+  // Demo requests use amount = 1. Retries use the same X-Request-Id header.
   int32 amount = 2;
 }
