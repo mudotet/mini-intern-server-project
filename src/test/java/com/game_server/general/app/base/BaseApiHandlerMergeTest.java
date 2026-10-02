@@ -155,6 +155,30 @@ class BaseApiHandlerMergeTest {
         assertEquals("device-2", CommonLoginResponseProto.parseFrom(body(response)).getDeviceId());
     }
 
+    @Test
+    void streamedOversizedBodyReturnsClientError() throws Exception {
+        InitHandler handler = new InitHandler();
+        akka.stream.javadsl.Source<akka.util.ByteString, akka.NotUsed> chunks = akka.stream.javadsl.Source.from(List.of(
+                akka.util.ByteString.fromArray(new byte[40000]), akka.util.ByteString.fromArray(new byte[40000])));
+        HttpRequest request = HttpRequest.create("/api/" + ApiCodes.COMMON_INIT).withMethod(HttpMethods.POST)
+                .withEntity(HttpEntities.createChunked(ApiResult.CONTENT_TYPE, chunks));
+        HttpResponse response = route(handler, request);
+        assertEquals(413, response.status().intValue());
+        assertEquals("INVALID_REQUEST", BusinessErrorProto.parseFrom(body(response)).getCode());
+    }
+
+    @Test
+    void stalledBodyReturnsTimeoutInsteadOfInternalError() throws Exception {
+        InitHandler handler = new InitHandler();
+        akka.stream.javadsl.Source<akka.util.ByteString, ?> stalled = akka.stream.javadsl.Source.<akka.util.ByteString>maybe();
+        HttpRequest request = HttpRequest.create("/api/" + ApiCodes.COMMON_INIT).withMethod(HttpMethods.POST)
+                .withEntity(HttpEntities.createChunked(ApiResult.CONTENT_TYPE, stalled));
+        HttpResponse response = new AppHandlerProvider(List.of(handler)).routes().handler(system).apply(request)
+                .toCompletableFuture().get(10, TimeUnit.SECONDS);
+        assertEquals(408, response.status().intValue());
+        assertEquals("INVALID_REQUEST", BusinessErrorProto.parseFrom(body(response)).getCode());
+    }
+
     private static HttpRequest request(BaseApiHandler handler, byte[] body) {
         String api = handler.getClass().getAnnotation(ApiHandler.class).value();
         return HttpRequest.create("/api/" + api).withMethod(HttpMethods.POST)

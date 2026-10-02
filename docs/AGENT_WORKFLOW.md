@@ -1,15 +1,15 @@
-# Workflow cho demo
+# Demo workflow
 
-1. Đọc [CONTEXT.md](../CONTEXT.md), [ROADMAP.md](ROADMAP.md), Git status và source của flow.
-2. Chọn một hành vi nhỏ nhưng chạy trọn: request → handler → service → DAO → dữ liệu → response.
-3. Sửa contract nếu cần, rồi triển khai class có nội dung cho flow đó.
-4. Kiểm tra hành vi, compile/test và diff.
-5. Ghi kết quả thực tế, phần chưa chạy và bước tiếp theo.
+1. Read [CONTEXT.md](../CONTEXT.md), [ROADMAP.md](ROADMAP.md), Git status, and the flow's source.
+2. Choose one small end-to-end behavior: request → handler → service → DAO → data → response.
+3. Update the contract if needed, then implement meaningful classes for that flow.
+4. Check behavior, compile/test, and review the diff.
+5. Record actual results, what was not run, and the next step.
 
-Dùng handler → service → DAO cụ thể. Domain model giữ state/quy tắc; mapping Protobuf thực hiện tại nơi dùng. Interface, abstract base, mapper riêng hoặc store adapter chỉ thêm khi có nhu cầu thật.
+Use handlers → services → concrete DAOs. Domain models hold state/rules; map Protobuf where it is used. Add interfaces, abstract bases, separate mappers, or store adapters only when there is a real need.
 
-Redis giữ Session; DynamoDB lưu Account/Device/Player, daily snapshot và purchase receipt. Config package ban đầu là file đóng gói cùng app. Đích demo là một EC2, app + Redis và DynamoDB AWS.
+Redis holds Sessions; DynamoDB stores Account/Device/Player, daily snapshots, and purchase receipts. Initial package configuration is a file bundled with the app. The demo target is one EC2 instance running app + Redis, with AWS DynamoDB.
 
-Class/proto tồn tại chưa chứng minh endpoint hoạt động. Các flow chính có test HTTP với Redis/DynamoDB Local; AWS cần kiểm tra riêng.
+The existence of classes/protos does not prove endpoints work. The main flows have HTTP tests with Redis/DynamoDB Local; AWS requires separate verification. Local verification passed 9 unit + 14 integration tests and the isolated Docker demo on 2026-10-02; live AWS EC2 remains unverified. The final ./gradlew clean compileJava test integrationTest build passed in 24 seconds.
 
-Bảo toàn thay đổi có nội dung của người dùng trong checkout hiện tại. Giữ scope demo; commit, push, provision hoặc deploy khi đã được người dùng yêu cầu. Các hướng dẫn vai trò nằm trong [agents/README.md](agents/README.md).
+Preserve meaningful user changes in the current checkout. Keep the demo scope; commit, push, provision, or deploy only when requested by the user. Read the matching role guide: [coder](agents/coder.md), [tester](agents/tester.md), [planning](agents/pm.md), or [deployer](agents/deployer.md).

@@ -1,0 +1,61 @@
+packages {
+  id: "xp_gold"
+  price { currency { key: "gold" value: 100 } }
+  items { key: "xp" value: 100 }
+  daily_reward_ranges { key: "xp" value { min: 80 max: 140 } }
+}
+packages {
+  id: "xp_gem"
+  price { currency { key: "gem" value: 8 } }
+  items { key: "xp" value: 150 }
+  daily_reward_ranges { key: "xp" value { min: 120 max: 200 } }
+}
+packages {
+  id: "gold_small"
+  price { currency { key: "gem" value: 5 } }
+  items { key: "gold" value: 100 }
+  daily_reward_ranges { key: "gold" value { min: 80 max: 160 } }
+}
+packages {
+  id: "gold_large"
+  price { currency { key: "gem" value: 15 } }
+  items { key: "gold" value: 350 }
+  daily_reward_ranges { key: "gold" value { min: 280 max: 450 } }
+}
+packages {
+  id: "gem_small"
+  price { currency { key: "gold" value: 100 } }
+  items { key: "gem" value: 5 }
+  daily_reward_ranges { key: "gem" value { min: 3 max: 8 } }
+}
+packages {
+  id: "gem_large"
+  price { currency { key: "gold" value: 250 } }
+  items { key: "gem" value: 15 }
+  daily_reward_ranges { key: "gem" value { min: 10 max: 20 } }
+}
+static_shop {
+  slots { slot_id: "static_1" package_id: "xp_gold" }
+  slots { slot_id: "static_2" package_id: "xp_gem" }
+  slots { slot_id: "static_3" package_id: "gold_small" }
+  slots { slot_id: "static_4" package_id: "gold_large" }
+  slots { slot_id: "static_5" package_id: "gem_small" }
+  slots { slot_id: "static_6" package_id: "gem_large" }
+}
+daily {
+  cycle_anchor: 1735664400
+  cycle_duration_seconds: 86400
+  purchase_limit: 3
+  discount_percentages: 10
+  discount_percentages: 20
+  discount_percentages: 30
+  slots { slot_id: "slot_1" }
+  slots { slot_id: "slot_2" }
+  slots { slot_id: "slot_3" }
+  candidates { package_id: "xp_gold" }
+  candidates { package_id: "xp_gem" }
+  candidates { package_id: "gold_small" }
+  candidates { package_id: "gold_large" }
+  candidates { package_id: "gem_small" }
+  candidates { package_id: "gem_large" }
+}

@@ -1,47 +1,47 @@
-# Roadmap demo
+# Demo roadmap
 
-## Đã triển khai
+## Implemented
 
-Login → Player Init → Static → Daily → Purchase chạy với Redis + DynamoDB Local. Có image app, Compose local và bộ deploy EC2. Nghiệp vụ từ phiên grill đã được đưa vào code và test.
+Login → Player Init → Static → Daily → Purchase are implemented for Redis + DynamoDB Local. An app image, local Compose setup, and EC2 deployment bundle are included. Business rules from the grilling session have been incorporated into code and tests. Local execution was verified on 2026-10-02; live AWS EC2 remains unverified.
 
-| Phần | Quy tắc |
+| Area | Rule |
 | --- | --- |
-| Identity | Một Device liên kết một Account; Account sở hữu một Player |
-| Login | Tạo/recover identity, Session 12 giờ; retry cùng body/RequestId |
-| InitialResources | Một lần: 1.000 gold, 100 gem, 0 XP |
-| Player Init | Trả Resource hiện tại, không refill |
-| Static | 6 package cố định, giá gốc, default rewards, không giới hạn daily |
-| Daily | 3 package khác nhau/player/ngày; quantity random, giữ loại Resource theo package |
-| Discount | Uniform 10/20/30%, chọn một lần mỗi offer/cycle |
-| Limit | 3 lần/offer/ngày |
-| Snapshot | Giữ giá/reward/discount trong ngày và qua restart; counter thay đổi khi mua |
-| Reset | 00:00 Asia/Ho_Chi_Minh, tạo snapshot khi request gặp expiry |
-| Purchase | amount=1; trừ tiền/cộng reward/counter/receipt cùng transaction |
-| Retry | DynamoDB receipt theo Player/RequestId; input khác bị từ chối |
+| Identity | One Device links to one Account; Account owns one Player |
+| Login | Create/recover identity, 12-hour Session; retry with the same body/RequestId |
+| InitialResources | Once: 1,000 gold, 100 gem, 0 XP |
+| Player Init | Return current Resources, without refilling |
+| Static | 6 fixed packages, base prices, default rewards, no daily limit |
+| Daily | 3 distinct packages/player/day; random quantities, retaining each package's Resource types |
+| Discount | Uniform 10/20/30%, selected once per offer/cycle |
+| Limit | 3 purchases/offer/day |
+| Snapshot | Retain price/reward/discount during the day and across restarts; counters change on purchase |
+| Reset | 00:00 Asia/Ho_Chi_Minh; create a snapshot when a request encounters expiry |
+| Purchase | amount=1; debit currency/credit reward/update counter/write receipt in one transaction |
+| Retry | DynamoDB receipt keyed by Player/RequestId; different input is rejected |
 
-Ví dụ xp_gold giá 100 gold, thưởng static 100 XP; daily quantity 80–140 XP. Nếu chọn 120 XP và discount 30%, ba lượt đều trả 70 gold/nhận 120 XP; lượt thứ tư bị từ chối.
+Example: xp_gold costs 100 gold and grants 100 XP in static; daily quantities range from 80–140 XP. If 120 XP and a 30% discount are selected, all three purchases cost 70 gold/grant 120 XP; the fourth is rejected.
 
-Package là cấu hình chung; DailyOffer là điều kiện bán đã chọn cho một Player/ngày. Loại Resource cố định, quantity đổi trong khoảng; không random giá/reward trong lúc purchase.
+Packages are shared configuration; DailyOffer is the selected sale terms for one Player/day. Resource types are fixed, while quantities vary within their ranges; prices/rewards are not randomized during purchase.
 
-## Đã kiểm tra và việc còn lại
+## Actual local verification and remaining work
 
-- Swagger có 10 endpoint; mục Thông tin thêm GET Player/Resource/Package/Session để hiển thị.
-- Build: 9 unit + 14 test HTTP với Redis/DynamoDB Local pass.
-- Các schema/file rỗng hoặc ngoài phạm vi đã dọn; chỉ tạo class có xử lý.
-- Local Compose và script demo được dùng để kiểm tra bộ app.
-- AWS mode dùng default credential chain; image EC2 dùng Java distribution đã build.
-- Cần EC2/region/IAM và thông tin SSH để kiểm tra trên AWS thật. Chưa provision hoặc deploy cloud trong phiên này.
+- Swagger has 10 endpoints; the Information section adds GET Player/Resource/Package/Session for display.
+- ./gradlew test integrationTest passed 9 unit + 14 HTTP integration tests with Redis/DynamoDB Local on 2026-10-02. The final ./gradlew clean compileJava test integrationTest build passed in 24 seconds.
+- Empty or out-of-scope schemas/files have been removed; create only classes with meaningful behavior.
+- ./gradlew installDist and the repair-validation Docker build passed; the image ran as nonroot UID 10001. The rebuilt isolated app on port 18080 returned Swagger HTTP 200 and passed JSON Login/Init/Static/Daily/Purchase, Protobuf purchase retry, and all four information APIs through scripts/demo.sh. Dedicated validation table/keys were cleaned; existing user containers were untouched.
+- AWS mode uses the default credential chain; the EC2 image uses a built Java distribution.
+- EC2/region/IAM and SSH details are needed for live AWS verification. No cloud resources have been provisioned or deployed in this session.
 
-Người dùng có khoảng 2 tuần, 1 giờ/ngày và báo Free Plan $100 credit. Dùng thời gian còn lại để đọc từng flow, chạy lại demo và triển khai AWS; không cần thêm flow ngoài phạm vi.
+The user has approximately 2 weeks, 1 hour/day, and reported a Free Plan with $100 credit. Use the remaining time to read each flow, rerun the demo, and deploy to AWS; no additional out-of-scope flows are needed.
 
-## Thứ tự học/diễn tập
+## Learning/rehearsal order
 
-1. Đọc Main, BaseApiHandler, LoginHandler → LoginService → GameDao.
-2. Login/Init và xem Device/Account/Player trong DynamoDB, Session TTL Redis.
-3. Đọc shop.textproto, ShopCatalog và ShopService; phân biệt Package với DailyOffer.
-4. Mua 3 lần, retry và xem Resource/counter/receipt.
-5. Đọc PurchaseService và transaction/version trong GameDao; chạy integrationTest.
-6. Restart app, kiểm tra dữ liệu; đọc test Clock để giải thích đổi ngày.
-7. Theo [DEPLOYMENT.md](DEPLOYMENT.md), chạy trên EC2 và diễn tập.
+1. Read Main, BaseApiHandler, LoginHandler → LoginService → GameDao.
+2. Run Login/Init and inspect Device/Account/Player in DynamoDB and Session TTL in Redis.
+3. Read shop.textproto, ShopCatalog, and ShopService; distinguish Package from DailyOffer.
+4. Purchase 3 times, retry, and inspect Resources/counter/receipt.
+5. Read PurchaseService and GameDao transaction/version handling; run integrationTest.
+6. Restart the app and check data; read Clock tests to explain day changes.
+7. Follow [DEPLOYMENT.md](DEPLOYMENT.md), run on EC2, and rehearse.
 
-Demo backend; giữ scope gold/gem/XP, không có IAP, UI game hoặc worker reset.
+Backend demo only; keep scope to gold/gem/XP, with no IAP, game UI, or reset worker.

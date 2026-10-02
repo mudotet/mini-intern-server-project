@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 public final class Main {
     public static AppHandlerProvider handlers(GameDao dao, GlobalConfig config, JwtHelper jwt, Clock clock) {
-        SessionService sessions = new SessionService(config.redis(), jwt, System.getenv().getOrDefault("GAME_TABLE", "mini_game"), clock);
+        SessionService sessions = new SessionService(config.redis(), jwt, dao.table(), clock);
         return handlers(dao, config.redis(), jwt, sessions, clock);
     }
 

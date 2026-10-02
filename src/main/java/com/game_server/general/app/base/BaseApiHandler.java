@@ -101,6 +101,10 @@ public abstract class BaseApiHandler implements AppHandler {
     protected boolean authenticate(HttpRequest request) { return false; }
 
     private HttpResponse handle(Throwable error, String requestId, boolean json) {
+        if (error instanceof akka.http.scaladsl.model.EntityStreamSizeException)
+            error = new GameException(413, "INVALID_REQUEST", "Request body exceeds 65536 bytes");
+        else if (error instanceof java.util.concurrent.TimeoutException)
+            error = new GameException(408, "INVALID_REQUEST", "Request body was not received within 5 seconds");
         if (error instanceof GameException) {
             GameException business = (GameException) error;
             return ApiResult.response(business.status, BusinessErrorProto.newBuilder()

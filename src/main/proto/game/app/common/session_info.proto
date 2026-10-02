@@ -1,0 +1,13 @@
+syntax = "proto3";
+package game.app;
+option java_package = "com.game.server.proto";
+option java_outer_classname = "SessionInfoContract";
+
+// Public Session metadata; never exposes tokens, Device IDs, or Session IDs.
+message SessionInfoResponseProto {
+  string account_id = 1;
+  string player_id = 2;
+  int64 expires_at = 3;
+  int64 server_time = 4;
+  int64 remaining_seconds = 5;
+}

@@ -1,73 +1,75 @@
 # API contract
 
-Các flow game dùng HTTP POST, Content-Type: application/x-protobuf hoặc application/json. Response dùng cùng định dạng với request. X-Request-Id được echo; Login/Purchase bắt buộc 16–128 ký tự chữ/số/underscore/hyphen, nên dùng UUID ngẫu nhiên. Các API thông tin dùng GET và luôn trả JSON.
+Game flows use HTTP POST with Content-Type: application/x-protobuf or application/json. Responses use the same format as requests. X-Request-Id is echoed; Login/Purchase require 16–128 letters/digits/underscores/hyphens, preferably a random UUID. Information APIs use GET and always return JSON.
 
-## Swagger và JSON
+## Swagger and JSON
 
-GET /swagger/ là Swagger UI; GET /swagger/openapi.json là OpenAPI 3.0.3. Chọn application/json để dùng Try it out; copy access_token từ Login vào Authorize. Swagger/asset chạy cùng app và dùng file trong classpath.
+GET /swagger/ serves Swagger UI; GET /swagger/openapi.json serves OpenAPI 3.0.3. Select application/json to use Try it out; copy access_token from Login into Authorize. Swagger/assets run with the app using classpath files.
 
-JSON được parse bằng Protobuf JsonFormat rồi gọi handler/service hiện có. Field response giữ snake_case; int64 trả string và default value 0/false được in. Request rỗng có thể gửi {} hoặc body rỗng. Field JSON không có trong schema bị từ chối. [JsonFormat docs](https://protobuf.dev/reference/java/api-docs/com/google/protobuf/util/JsonFormat.html).
+JSON is parsed with Protobuf JsonFormat, then passed to the existing handler/service. Response fields retain snake_case; int64 values are strings and default 0/false values are printed. Empty requests can use {} or an empty body. JSON fields absent from the schema are rejected. [JsonFormat docs](https://protobuf.dev/reference/java/api-docs/com/google/protobuf/util/JsonFormat.html).
 
-Giữ RequestId/input khi retry, kể cả đổi transport JSON ↔ Protobuf. Receipt lưu Protobuf, cùng Player vẫn chỉ mua một lần. Mỗi lượt mới tạo RequestId mới. API chọn response format theo Content-Type của request; Accept không chuyển định dạng riêng.
+Keep the same RequestId/input when retrying, including when switching JSON ↔ Protobuf transports. Receipts store Protobuf; the same Player still purchases only once. Create a new RequestId for each new operation. The API chooses the response format from the request Content-Type; Accept does not independently change it.
 
 | Flow | Path | Request | Auth |
 | --- | --- | --- | --- |
 | Public init | /api/001003 | CommonInitRequest | Public |
 | Login | /api/001002 | CommonLoginRequestProto | Public |
-| Player Init | /api/002007 | PlayerInitRequestProto rỗng | Bearer JWT + Redis |
-| Static | /api/003004 | Body rỗng | Bearer JWT + Redis |
-| Daily | /api/003005 | Body rỗng | Bearer JWT + Redis |
+| Player Init | /api/002007 | Empty PlayerInitRequestProto | Bearer JWT + Redis |
+| Static | /api/003004 | Empty body | Bearer JWT + Redis |
+| Daily | /api/003005 | Empty body | Bearer JWT + Redis |
 | Purchase | /api/003002 | ShopPurchaseRequestProto | Bearer JWT + Redis |
 
-## Thông tin để hiển thị
+## Information for display
 
-Nhóm Swagger **05 · Thông tin** gồm các API GET, luôn trả application/json và Cache-Control: no-store. Cần Bearer JWT + Session Redis, không cần Content-Type, body hoặc X-Request-Id. Body khác rỗng bị từ chối (400). Player lấy từ JWT đã xác thực; query player_id không chọn Player khác.
+The Swagger **05 · Information** group contains GET APIs that always return application/json and Cache-Control: no-store. They require Bearer JWT + Redis Session, but no Content-Type, body, or X-Request-Id. Nonempty bodies are rejected (400). Player is obtained from the authenticated JWT; a player_id query cannot select another Player.
 
-| Path | Response | Dùng để |
+| Path | Response | Purpose |
 | --- | --- | --- |
-| /api/info/player | PlayerProfileResponseProto | Hiển thị account_id/player_id |
-| /api/info/resources | PlayerResourcesResponseProto | Resource hiện tại, đọc lại sau Purchase |
-| /api/info/packages | ShopPackagesResponseProto | Package chung: giá gốc, rewards và khoảng daily quantity |
-| /api/info/session | SessionInfoResponseProto | Account/Player của phiên, expires_at/server_time/remaining_seconds |
+| /api/info/player | PlayerProfileResponseProto | Display account_id/player_id |
+| /api/info/resources | PlayerResourcesResponseProto | Current Resources; read again after Purchase |
+| /api/info/packages | ShopPackagesResponseProto | Shared Packages: base prices, rewards, daily quantity ranges |
+| /api/info/session | SessionInfoResponseProto | Session Account/Player, expires_at/server_time/remaining_seconds |
 
-Player/Resource đọc consistent GetItem từ DynamoDB; Package lấy từ ShopCatalog đang dùng bởi ShopService. Không refill, không random DailyOffer và không ghi Player. Package không chứa điều kiện DailyOffer đã chọn; gọi API Daily để lấy giá/discount/reward/counter của ngày.
+Player/Resource use consistent DynamoDB GetItem reads; Packages come from the ShopCatalog used by ShopService. These APIs do not refill Resources, randomize DailyOffers, or write Player. Packages do not contain the selected DailyOffer terms; call Daily for the day's price/discount/reward/counter.
 
-Session info kiểm tra chữ ký/hạn JWT và Session Redis; không trả access_token, device_id hoặc session_id. expires_at/server_time là Unix seconds; remaining_seconds đếm tới hạn JWT. Redis mất Session hoặc login mới thay thế Session thì API trả 401, dù JWT cũ chưa tới hạn. Các int64 vẫn là string trong JSON.
+Session info checks JWT signature/expiry and Redis Session; it does not return access_token, device_id, or session_id. expires_at/server_time are Unix seconds; remaining_seconds counts down to JWT expiry. If Redis loses the Session or a new login replaces it, the API returns 401 even if the old JWT has not expired. int64 values remain strings in JSON.
 
-## Login và Init
+## Login and Init
 
-Login device_id rỗng: server tạo Device ID ổn định theo RequestId, tạo Account/Player và tài nguyên mặc định. Retry phải giữ nguyên cả body và RequestId. Không đổi body thành Device ID vừa nhận khi retry request đầu tiên.
+Login with an empty device_id: the server generates a stable Device ID from RequestId, creates Account/Player, and grants default Resources. Retries must keep both body and RequestId unchanged. Do not change the body to the newly returned Device ID when retrying the first request.
 
-Device đã biết: gửi device_id; account_id/player_id tùy chọn, nếu có phải khớp. Dùng RequestId mới để tạo Session mới. Response có account_id, player_id, device_id, access_token, session_expires_at, new_account.
+Known Device: send device_id; account_id/player_id are optional but must match if supplied. Use a new RequestId to create a new Session. The response includes account_id, player_id, device_id, access_token, session_expires_at, and new_account.
 
-Login cache tồn tại tối đa 12 giờ trong Redis. Retry giữ Session cũ; nếu Session bị thay thế hoặc Redis mất Session, dùng RequestId mới để login. Identity/InitialResources vẫn chỉ tạo một lần.
+The login cache lasts up to 12 hours in Redis. Retries retain the original Session; if it is replaced or Redis loses it, use a new RequestId to log in. Identity/InitialResources are still created only once.
 
-Đây là guest login cho demo: người biết Device ID có thể phục hồi Account. Không có password, OAuth hoặc liên kết nhiều Device. Giữ Device ID như thông tin đăng nhập.
+This is guest login for the demo: anyone who knows a Device ID can recover its Account. There is no password, OAuth, or multi-Device linking. Treat Device ID as a login credential.
 
-JWT gồm account_id/player_id/device_id/session_id và exp. Server kiểm tra chữ ký/expiry và so với Session Redis trước khi gọi service. Player ID cho các API được lấy từ JWT, không từ body.
+JWT contains account_id/player_id/device_id/session_id and exp. The server checks signature/expiry and compares it with Redis Session before calling the service. Player ID for APIs comes from JWT, not the body.
 
-Public init trả metadata/version/time. Player Init trả Resource hiện tại; không cấp lại tài nguyên.
+Public init returns metadata/version/time. Player Init returns current Resources; it does not grant them again.
 
-## Shop và Purchase
+## Shop and Purchase
 
-Static offer ID: static:<package_id>. Daily: daily:<cycle_start>:<slot_id>:<package_id>, phạm vi Player do auth xác định.
+Static offer ID: static:<package_id>. Daily: daily:<cycle_start>:<slot_id>:<package_id>, scoped to the Player determined by authentication.
 
-Daily active khi cycle_start <= thời gian server < expires_at. Ba package khác nhau, giảm 10/20/30%, quantity trong khoảng cấu hình; giá = max(1, base × (100 − discount) / 100), chia nguyên. Giá/reward/discount/limit được lưu và giữ trong ngày. Mốc ngày: 00:00 Asia/Ho_Chi_Minh.
+Daily is active when cycle_start <= server time < expires_at. It selects three distinct packages, a 10/20/30% discount, and quantities within configured ranges; price = max(1, base × (100 − discount) / 100), using integer division. Price/reward/discount/limit are stored and retained for the day. Day boundary: 00:00 Asia/Ho_Chi_Minh.
 
-Purchase request id lấy từ shop response, amount=1. Server tự lấy giá/reward; không nhận giá từ client. items trong response là rewards vừa nhận, resources là tài nguyên sau lần mua, offer_id là ID đã mua.
+The Purchase request's id is taken from the shop response, with amount=1. The server resolves price/reward itself; it does not accept client prices. Response items are the rewards just received, resources are the post-purchase Resources, and offer_id is the purchased ID.
 
-Cùng (Player, RequestId, offer ID, amount) trả original response đã lưu, kể cả khi số dư hiện tại đã thay đổi hoặc offer đã hết hạn. Cùng RequestId với input khác trả 409. Receipt không hết hạn trong demo.
+The same (Player, RequestId, offer ID, amount) returns the stored original response, even if the current balance has changed or the offer has expired. The same RequestId with different input returns 409. Receipts do not expire in this demo.
 
-## Lỗi
+## Errors
 
-BusinessErrorProto gồm code và message. Không có exception/stack trace trong response.
+BusinessErrorProto contains code and message. Responses contain no exception/stack trace.
 
 | HTTP | Code |
 | --- | --- |
 | 400 | INVALID_REQUEST, INVALID_JSON, INVALID_PROTOBUF, INVALID_IDENTITY, REQUEST_ID_REQUIRED, INVALID_PURCHASE |
 | 401 | AUTH_INVALID |
+| 408 | INVALID_REQUEST (request body timeout) |
+| 413 | INVALID_REQUEST (request body exceeds 64 KiB) |
 | 404 | OFFER_NOT_FOUND, ROUTE_NOT_FOUND |
 | 409 | IDENTITY_MISMATCH, REQUEST_ID_REUSED, INSUFFICIENT_FUNDS, OFFER_EXPIRED, PURCHASE_LIMIT, RETRY |
 | 500 | INTERNAL_ERROR |
 
-RETRY: gửi lại cùng body/RequestId. Unknown route trả 404. Xem [schema](../src/main/proto) và [script demo](../scripts/demo.sh) để encode/decode.
+RETRY: resend the same body/RequestId. Unknown routes return 404. See the [schemas](../src/main/proto) and [demo script](../scripts/demo.sh) for encoding/decoding.

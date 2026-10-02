@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mini Game Server — Swagger</title>
+  <link rel="stylesheet" href="/swagger/assets/swagger-ui.css">
+  <style>
+    body { margin: 0; background: #fafafa; }
+    .demo-guide { max-width: 1380px; margin: 24px auto 0; padding: 0 20px; font: 15px/1.6 system-ui, sans-serif; }
+    .demo-guide h1 { font-size: 22px; margin-bottom: 8px; }
+    .demo-guide button { padding: 7px 12px; cursor: pointer; }
+    #request-id { width: min(310px, 90%); padding: 8px; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <section class="demo-guide">
+    <h1>Mini game backend demo</h1>
+    <p>Login → copy <code>access_token</code> → <strong>Authorize</strong> → Player Init → Shop → Purchase.</p>
+    <p>Select <code>application/json</code> to enter and view data. Use a new RequestId for each new operation; keep the same ID and input when retrying, including across JSON and Protobuf.</p>
+    <p><strong>05 · Information</strong> provides authenticated GET APIs for Player, current Resources, Packages and Session. No body or RequestId is required.</p>
+    <button id="new-request-id" type="button">Generate RequestId</button>
+    <input id="request-id" aria-label="RequestId" readonly>
+    <button id="copy-request-id" type="button">Copy RequestId</button>
+    <span id="copy-status" role="status"></span>
+  </section>
+  <div id="swagger-ui"></div>
+  <script src="/swagger/assets/swagger-ui-bundle.js"></script>
+  <script>
+    const requestId = document.getElementById("request-id");
+    const status = document.getElementById("copy-status");
+    function newRequestId() {
+      const bytes = crypto.getRandomValues(new Uint8Array(16));
+      requestId.value = Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+      status.textContent = "";
+    }
+    document.getElementById("new-request-id").onclick = newRequestId;
+    document.getElementById("copy-request-id").onclick = async () => {
+      requestId.select();
+      try {
+        await navigator.clipboard.writeText(requestId.value);
+        status.textContent = "Copied";
+      } catch (error) {
+        status.textContent = "Press Ctrl+C or Command+C to copy the selected RequestId.";
+      }
+    };
+    newRequestId();
+    window.ui = SwaggerUIBundle({
+      url: "/swagger/openapi.json",
+      dom_id: "#swagger-ui",
+      deepLinking: true,
+      persistAuthorization: false,
+      validatorUrl: null,
+      docExpansion: "list",
+      defaultModelsExpandDepth: 0,
+      displayRequestDuration: true,
+      supportedSubmitMethods: ["get", "post"]
+    });
+  </script>
+</body>
+</html>

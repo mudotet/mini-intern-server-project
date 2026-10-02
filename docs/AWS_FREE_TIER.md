@@ -1,15 +1,15 @@
-# AWS cho demo basic
+# AWS for a basic demo
 
-Một EC2 chạy app + Redis; DynamoDB AWS cùng region. Người dùng báo có Free Plan/$100 credit; chưa xác minh Billing của tài khoản.
+One EC2 instance runs the app + Redis; AWS DynamoDB is in the same region. The user reported a Free Plan/$100 credit; account Billing has not been verified.
 
-Free Plan kết thúc khi hết credit hoặc sau 6 tháng, tùy mốc nào tới trước. Điều kiện tài khoản và credit còn lại xem trong Console. [AWS Free Tier FAQ](https://aws.amazon.com/free/free-tier-faqs/).
+Free Plan ends when credit runs out or after 6 months, whichever comes first. Check account eligibility and remaining credit in Console. [AWS Free Tier FAQ](https://aws.amazon.com/free/free-tier-faqs/).
 
-DynamoDB Standard có allowance provisioned 25 RCU/25 WCU và 25 GB; mức dùng của các bảng khác cũng cần tính. Bảng demo dùng provisioned 10 RCU/10 WCU, không autoscaling/GSI/streams/PITR trong cấu hình ban đầu. On-demand không sử dụng allowance RCU/WCU provisioned. [DynamoDB pricing](https://aws.amazon.com/dynamodb/pricing/).
+DynamoDB Standard has a provisioned allowance of 25 RCU/25 WCU and 25 GB; usage by other tables also counts. The demo table uses provisioned 10 RCU/10 WCU, with no autoscaling/GSI/streams/PITR in the initial configuration. On-demand does not use the provisioned RCU/WCU allowance. [DynamoDB pricing](https://aws.amazon.com/dynamodb/pricing/).
 
-- Build image ở máy phát triển. App JVM heap 256 MiB; Compose EC2 giới hạn app 512 MiB, Redis 128 MiB để phù hợp máy nhỏ.
-- Chọn instance trong account/region cho phép; xem giá EC2, EBS và IPv4, không mặc định mọi máy “micro” đều miễn phí.
-- Redis ở mạng Docker nội bộ; API qua SSH tunnel. EC2 IAM role cấp đúng quyền trên một bảng.
-- Xem credit/Free Plan expiry và Billing trước/sau demo. Budget alert giúp theo dõi, không tự dừng tài nguyên.
-- Stop EC2 vẫn có thể còn EBS; terminate cần kiểm tra volume và IP còn giữ. Xóa DynamoDB table khi dữ liệu không còn cần.
+- Build the image on the development machine. The app JVM heap is 256 MiB; EC2 Compose limits the app to 512 MiB and Redis to 128 MiB to suit a small instance.
+- Choose an instance allowed by the account/region; check EC2, EBS, and IPv4 pricing rather than assuming every “micro” instance is free.
+- Redis stays on the internal Docker network; the API is accessed through an SSH tunnel. The EC2 IAM role grants the required permissions on one table.
+- Check credit/Free Plan expiry and Billing before/after the demo. Budget alerts aid monitoring but do not automatically stop resources.
+- Stopping EC2 may retain EBS; after termination, check retained volumes and IPs. Delete the DynamoDB table when its data is no longer needed.
 
-[Cách deploy](DEPLOYMENT.md) gồm policy và lựa chọn image architecture. Chưa provision AWS trong phiên này; local test không chứng minh account eligibility hay IAM.
+[Deployment instructions](DEPLOYMENT.md) include the policy and image architecture choice. AWS has not been provisioned in this session; local tests do not establish account eligibility or IAM behavior. Local verification passed 9 unit + 14 integration tests and the isolated Docker demo on 2026-10-02; live AWS EC2 remains unverified. The final ./gradlew clean compileJava test integrationTest build passed in 24 seconds.

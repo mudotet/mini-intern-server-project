@@ -1,0 +1,14 @@
+syntax = "proto3";
+package game.app;
+option java_package = "com.game.server.proto";
+option java_outer_classname = "PlayerInitContract";
+import "game/model/resource.proto";
+
+message PlayerInitRequestProto {}
+
+// Reads the authenticated Player's current balances without granting resources.
+message PlayerInitResponseProto {
+  repeated game.model.Resource resources = 1;
+  string player_id = 2;
+  string account_id = 3;
+}

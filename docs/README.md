@@ -1,11 +1,11 @@
-# Đọc demo backend
+# Read the backend demo
 
 1. [CONTEXT.md](../CONTEXT.md): Package, DailyOffer, Player.
-2. [ROADMAP.md](ROADMAP.md): quy tắc đã triển khai và thứ tự học.
+2. [ROADMAP.md](ROADMAP.md): implemented rules and learning order.
 3. [ARCHITECTURE.md](ARCHITECTURE.md): request → handler → service → GameDao.
-4. [API_CONTRACT.md](API_CONTRACT.md), [PROTO_GUIDE.md](PROTO_GUIDE.md): API và schema.
-5. [TESTING.md](TESTING.md): unit, HTTP với Redis/DynamoDB Local.
-6. [DEPLOYMENT.md](DEPLOYMENT.md), [AWS_FREE_TIER.md](AWS_FREE_TIER.md): local và EC2.
-7. [agents/README.md](agents/README.md): hướng dẫn theo vai trò.
+4. [API_CONTRACT.md](API_CONTRACT.md), [PROTO_GUIDE.md](PROTO_GUIDE.md): APIs and schemas.
+5. [TESTING.md](TESTING.md): unit tests and HTTP tests with Redis/DynamoDB Local.
+6. [DEPLOYMENT.md](DEPLOYMENT.md), [AWS_FREE_TIER.md](AWS_FREE_TIER.md): local and EC2 setup.
+7. Role-specific guidance: [coder](agents/coder.md), [tester](agents/tester.md), [planning](agents/pm.md), and [deployer](agents/deployer.md).
 
-Các flow chính đã triển khai và kiểm tra local. AWS thật là bước cần thông tin tài khoản/EC2 để xác minh.
+The main flows are implemented. Local verification passed 9 unit + 14 integration tests and the isolated Docker demo on 2026-10-02. Live AWS EC2 remains unverified; the final ./gradlew clean compileJava test integrationTest build passed in 24 seconds.

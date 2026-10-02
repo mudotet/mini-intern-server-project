@@ -1,12 +1,12 @@
-# Chạy và deploy
+# Running and deployment
 
-Đọc [DEPLOYMENT.md](../DEPLOYMENT.md) khi chạy local/EC2; đọc [AWS_FREE_TIER.md](../AWS_FREE_TIER.md) trước tạo tài nguyên tính phí.
+Read [DEPLOYMENT.md](../DEPLOYMENT.md) for local/EC2 execution; read [AWS_FREE_TIER.md](../AWS_FREE_TIER.md) before creating billable resources.
 
-- Chạy Java 11 build/test trên máy phát triển; dùng scripts/package-ec2.sh cho image đúng kiến trúc.
-- Local dùng docker/docker-compose.yaml; EC2 dùng deploy/ec2-compose.yaml, app + Redis và DynamoDB AWS.
-- Bảng AWS phải tồn tại và ACTIVE trước startup; runtime IAM policy chỉ có GetItem/PutItem/DescribeTable. Dùng EC2 role, IMDSv2/hop limit 2 cho Docker bridge.
-- Giữ secret/data qua restart; .env ngoài Git/image/log. API demo qua SSH tunnel, Redis nội bộ.
-- Sau deploy chạy scripts/demo.sh và kiểm tra login/Player/snapshot/receipt qua restart.
-- Báo artifact/architecture, endpoint và môi trường đã kiểm tra. Local pass và AWS pass là hai kết quả riêng.
+- Run Java 11 build/tests on the development machine; use scripts/package-ec2.sh for an image with the correct architecture.
+- Local uses docker/docker-compose.yaml; EC2 uses deploy/ec2-compose.yaml, app + Redis, and AWS DynamoDB.
+- The AWS table must exist and be ACTIVE before startup; runtime IAM policy has only GetItem/PutItem/DescribeTable. Use an EC2 role, with IMDSv2/hop limit 2 for Docker bridge.
+- Preserve secrets/data across restarts; keep .env outside Git/images/logs. Demo the API through an SSH tunnel; keep Redis internal.
+- After deployment, run scripts/demo.sh; its optional local restart check verifies receipt equality and Session validity, not the full Player or daily snapshot.
+- Report artifact/architecture, endpoint, and verified environment. Local pass and AWS pass are separate results.
 
-Tôn trọng yêu cầu deploy/provision của phiên làm việc; dùng account/instance/region người dùng cung cấp. Giữ dữ liệu local và thay đổi có nội dung của người dùng.
+Respect the session's deployment/provisioning request; use the account/instance/region supplied by the user. Preserve local data and meaningful user changes.

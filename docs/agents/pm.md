@@ -1,16 +1,16 @@
-# Lập kế hoạch
+# Planning
 
-Đọc [CONTEXT.md](../../CONTEXT.md) và [ROADMAP.md](../ROADMAP.md). Mục tiêu là demo backend đủ để giải thích và chạy trên EC2 với Redis/DynamoDB.
+Read [CONTEXT.md](../../CONTEXT.md) and [ROADMAP.md](../ROADMAP.md). The goal is a backend demo that can be explained and run on EC2 with Redis/DynamoDB.
 
-Thứ tự: Login + Player Init → StaticShop → DailyShop → Purchase → Docker/AWS.
+Order: Login + Player Init → StaticShop → DailyShop → Purchase → Docker/AWS.
 
-Mỗi task ghi flow cần hoàn thành, file cần đọc, kết quả request mong đợi và cách kiểm tra. Chia theo hành vi có thể chạy, giữ lượng công việc phù hợp thời gian người dùng học/làm.
+Each task records the flow to complete, files to read, expected request results, and verification method. Split work by runnable behavior and keep it within the user's learning/working time.
 
-- Phân biệt source đang chạy, contract đã chuẩn bị và tính năng đang đề xuất.
-- Giữ handler → service → DAO; chọn phương án cụ thể, ít lớp và ít dependency.
-- Chỉ hỏi về nghiệp vụ chưa rõ; tự kiểm tra những sự thật có trong repo.
-- Account/Player, tài nguyên mặc định, random reward/discount và giới hạn daily theo roadmap.
-- Hoàn thành tiêu chí của flow trước khi lên task phụ thuộc.
-- Kết quả bàn giao gồm thay đổi, lệnh đã chạy, kết quả và việc còn thiếu.
+- Distinguish working source, prepared contracts, and proposed features.
+- Keep handler → service → DAO; choose concrete solutions with few layers and dependencies.
+- Ask only about unclear business rules; inspect facts already available in the repository yourself.
+- Follow the roadmap for Account/Player, default Resources, random rewards/discounts, and daily limits.
+- Complete the flow's criteria before scheduling dependent tasks.
+- Handoffs include changes, commands run, results, and remaining work.
 
-Làm trong checkout hiện tại; bảo toàn thay đổi có nội dung của người dùng. Scope ngoài demo cần yêu cầu mới từ người dùng.
+Work in the current checkout and preserve meaningful user changes. Work outside the demo scope requires a new user request.

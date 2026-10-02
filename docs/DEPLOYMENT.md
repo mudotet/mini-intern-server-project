@@ -1,22 +1,22 @@
-# Chạy local và deploy EC2
+# Run locally and deploy to EC2
 
-## Local bằng Docker
+## Local Docker setup
 
-Cần Java 11 + Docker Compose + Python 3; curl/protoc để chạy script demo.
+Requires Java 11 + Docker Compose + Python 3; curl/protoc are needed for the demo script.
 
 ```bash
 bash scripts/run-local.sh
 docker compose -f docker/docker-compose.yaml logs app
 bash scripts/demo.sh
-# Thêm kiểm tra restart app Docker local:
+# Include a local Docker app restart check:
 DEMO_RESTART_LOCAL=1 bash scripts/demo.sh
 ```
 
-run-local tạo JWT_SECRET ngẫu nhiên khi .env thiếu secret hợp lệ, chạy installDist và build image. Các biến khác trong .env được giữ. Chờ log “Mini game API ready”. .env được Git ignore; giữ secret này qua restart để JWT còn dùng được.
+run-local generates a random JWT_SECRET when .env lacks a valid secret, runs installDist, and builds the image. Other .env variables are preserved. Wait for the “Mini game API ready” log. .env is ignored by Git; retain this secret across restarts so JWTs remain usable.
 
-Mở http://localhost:8080/swagger/ để demo bằng browser. Trên EC2, mở cùng URL qua SSH tunnel; Swagger assets được đóng gói trong image.
+Open http://localhost:8080/swagger/ for a browser demo. On EC2, open the same URL through an SSH tunnel; Swagger assets are bundled in the image.
 
-Chỉ chạy Redis/DynamoDB rồi chạy app trên host:
+To run only Redis/DynamoDB, then run the app on the host:
 
 ```bash
 docker compose -f docker/docker-compose.yaml up -d
@@ -24,32 +24,32 @@ export JWT_SECRET="$(openssl rand -hex 32)"
 ./gradlew run
 ```
 
-Nếu app Docker đang chiếm port 8080, dừng service app trước hoặc đổi HTTP_PORT khi chạy host.
+If the Docker app already occupies port 8080, stop the app service first or change HTTP_PORT for the host process.
 
-| Biến | Mặc định / vai trò |
+| Variable | Default / purpose |
 | --- | --- |
-| JWT_SECRET | Bắt buộc, tối thiểu 32 bytes |
-| GAME_TABLE | mini_game, cũng là namespace Redis |
+| JWT_SECRET | Required, at least 32 bytes |
+| GAME_TABLE | mini_game, also the Redis namespace |
 | HTTP_PORT | 8080 |
-| REDIS_HOST/REDIS_PORT | localhost/6379; Compose đặt host redis |
-| DYNAMODB_MODE | local hoặc aws |
+| REDIS_HOST/REDIS_PORT | localhost/6379; Compose sets host redis |
+| DYNAMODB_MODE | local or aws |
 | DYNAMODB_ENDPOINT | Local: http://localhost:8000; Compose: http://dynamodb:8000 |
-| AWS_REGION | us-east-1; AWS chọn cùng region với bảng |
+| AWS_REGION | us-east-1; in AWS, use the table's region |
 
-Local dùng credentials local/local. AWS mode dùng default credential chain và không endpoint override. [AWS SDK docs](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials-chain.html).
+Local uses local/local credentials. AWS mode uses the default credential chain without an endpoint override. [AWS SDK docs](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials-chain.html).
 
-Startup chuẩn bị một bảng id String HASH, provisioned 10 RCU/10 WCU. Dữ liệu cũ trong bảng login_devices được giữ; bản này dùng mini_game với Account/Player thật. Device chỉ từng đăng nhập bản cũ sẽ được tạo Account/Player mới trong bảng mới; không có migration.
+Startup prepares a table with an id String HASH key and provisioned 10 RCU/10 WCU. Existing data in login_devices is preserved; this version uses mini_game with actual Account/Player records. A Device that logged in only to the old version receives a new Account/Player in the new table; there is no migration.
 
-## Chuẩn bị AWS
+## Prepare AWS
 
-1. Kiểm tra Free Plan/credit trong Billing theo [AWS_FREE_TIER.md](AWS_FREE_TIER.md).
-2. Tạo bảng DynamoDB tên mini_game, partition key id String, không sort key/GSI; provisioned 10 RCU/10 WCU, tắt autoscaling cho demo. Để table ACTIVE trước chạy app.
-3. Trong [runtime-policy.json](../deploy/runtime-policy.json), thay REGION/ACCOUNT_ID bằng region/account của bạn, tên bảng đúng GAME_TABLE. Tạo IAM role trusted service EC2, attach policy và gắn instance profile vào EC2. Runtime dùng GetItem/PutItem/DescribeTable; Put trong transaction được kiểm soát bởi PutItem permission. [IAM transactions](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis-iam.html).
-4. Chọn EC2 Linux khoảng 1 GiB RAM, theo loại máy được account cho phép; chọn kiến trúc khớp image (mặc định script build x86_64). Cài Docker Engine và Docker Compose plugin theo hệ điều hành.
-5. Metadata: IMDS endpoint enabled, IMDSv2 required, response hop limit 2 vì app chạy trong Docker bridge. [EC2 IMDS docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html).
-6. Security Group chỉ cần SSH 22 từ IP của bạn cho cách demo qua tunnel dưới đây. API bind localhost; Redis không publish port.
+1. Check Free Plan/credit in Billing as described in [AWS_FREE_TIER.md](AWS_FREE_TIER.md).
+2. Create a DynamoDB table named mini_game, with partition key id String and no sort key/GSI; provisioned 10 RCU/10 WCU, with autoscaling disabled for the demo. Wait for the table to become ACTIVE before starting the app.
+3. In [runtime-policy.json](../deploy/runtime-policy.json), replace REGION/ACCOUNT_ID with your region/account, matching the table name to GAME_TABLE. Create an IAM role trusted by EC2, attach the policy, and attach an instance profile to EC2. Runtime uses GetItem/PutItem/DescribeTable; transactional Put is governed by PutItem permission. [IAM transactions](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis-iam.html).
+4. Choose a Linux EC2 instance with approximately 1 GiB RAM from the types allowed by your account; select an architecture matching the image (the build script defaults to x86_64). Install Docker Engine and the Docker Compose plugin for the operating system.
+5. Metadata: IMDS endpoint enabled, IMDSv2 required, response hop limit 2 because the app runs in a Docker bridge. [EC2 IMDS docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html).
+6. The Security Group only needs SSH 22 from your IP for the tunnel demo below. The API binds to localhost; Redis publishes no port.
 
-Tạo bảng có thể làm trong Console hoặc CloudShell sau khi chọn đúng account/region:
+Create the table in Console or CloudShell after selecting the correct account/region:
 
 ```bash
 aws dynamodb create-table --region REGION --table-name mini_game \
@@ -60,21 +60,21 @@ aws dynamodb create-table --region REGION --table-name mini_game \
 aws dynamodb wait table-exists --region REGION --table-name mini_game
 ```
 
-Runtime role không có CreateTable/DeleteTable; bảng AWS cần tạo trước. Không đặt AWS access key trong image/.env; EC2 IAM role cung cấp credentials tạm thời.
+The runtime role has no CreateTable/DeleteTable permissions; the AWS table must be created beforehand. Do not put AWS access keys in the image/.env; the EC2 IAM role supplies temporary credentials.
 
-## Đóng gói và chuyển app
+## Package and transfer the app
 
-Ở máy phát triển:
+On the development machine:
 
 ```bash
 bash scripts/package-ec2.sh
-# ARM64 EC2 thì dùng: bash scripts/package-ec2.sh linux/arm64
+# For ARM64 EC2, use: bash scripts/package-ec2.sh linux/arm64
 scp -i /path/key.pem build/mini-game-server-ec2.tar.gz deploy/ec2-compose.yaml .env.example USER@EC2_IP:~/
 ```
 
-Build Java ở máy phát triển; EC2 chỉ load image, không chạy Gradle. Không cần ECR.
+Build Java on the development machine; EC2 only loads the image and does not run Gradle. ECR is not required.
 
-Trên EC2, lần cài đầu tiên:
+On EC2, for the first installation:
 
 ```bash
 mkdir -p ~/mini-game
@@ -84,35 +84,52 @@ docker load -i mini-game-server-ec2.tar.gz
 umask 077
 cp -n .env.example .env
 chmod 600 .env
-openssl rand -hex 32
+python3 - <<'PY'
+from pathlib import Path
+import re
+import secrets
+import shlex
+
+path = Path(".env")
+text = path.read_text()
+pattern = r"(?m)^[ \t]*(?:export[ \t]+)?JWT_SECRET[ \t]*=(.*)$"
+values = re.findall(pattern, text)
+if not any("".join(shlex.split(value, comments=True)).strip() for value in values):
+    line = "JWT_SECRET=" + secrets.token_hex(32)
+    if values:
+        text = re.sub(pattern, lambda match: line, text)
+    else:
+        text += ("\n" if text and not text.endswith("\n") else "") + line + "\n"
+    path.write_text(text)
+PY
 nano .env
-# Paste secret vua tao vao JWT_SECRET; sua AWS_REGION va GAME_TABLE theo Console.
+# Set AWS_REGION and GAME_TABLE to match Console; retain JWT_SECRET.
 docker compose --env-file .env -f ec2-compose.yaml up -d
 docker compose -f ec2-compose.yaml logs app
 ```
 
-Trong [.env.example](../.env.example), chỉ cần điền 3 biến: JWT_SECRET, AWS_REGION và GAME_TABLE. Lệnh openssl tạo secret để bạn paste vào .env trên EC2. Giữ nguyên secret khi cập nhật app; không chia sẻ nội dung .env hoặc lưu secret vào log demo.
+Install Python 3 on EC2 before running the secret-generation step. The Python command writes a random JWT_SECRET directly into .env without printing it, only when no nonblank existing value is present; existing nonblank values and other settings are preserved. Configure AWS_REGION and GAME_TABLE in [.env.example](../.env.example)'s copied .env. Retain the secret when updating the app; do not share .env contents or put secrets in demo logs.
 
-Compose EC2 đã đặt DYNAMODB_MODE=aws và REDIS_HOST=redis; không cần endpoint DynamoDB Local. AWS credentials lấy từ IAM role gắn vào EC2 ([AWS SDK hướng dẫn](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/ec2-iam-roles.html)). ACCOUNT_ID dùng trong runtime-policy.json; IP/DNS, SSH user và file .pem dùng trong scp/ssh. Các thông tin đó không cần thêm vào .env.
+EC2 Compose already sets DYNAMODB_MODE=aws and REDIS_HOST=redis; no DynamoDB Local endpoint is needed. AWS credentials come from the IAM role attached to EC2 ([AWS SDK guide](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/ec2-iam-roles.html)). ACCOUNT_ID is used in runtime-policy.json; IP/DNS, SSH user, and .pem file are used in scp/ssh. These details do not need to be added to .env.
 
-Ở máy phát triển, mở tunnel trong terminal riêng rồi chạy demo:
+On the development machine, open a tunnel in a separate terminal, then run the demo:
 
 ```bash
 ssh -i /path/key.pem -N -L 8080:127.0.0.1:8080 USER@EC2_IP
 bash scripts/demo.sh http://localhost:8080
 ```
 
-Dừng app local đang dùng 8080 trước mở tunnel, hoặc dùng port khác và truyền URL tương ứng. Script tạo guest Player mới cho mỗi lần demo; có ghi dữ liệu và mua bằng gold/gem.
+Stop any local app using 8080 before opening the tunnel, or use another port and pass the corresponding URL. The script creates a new guest Player for each demo; it writes data and purchases using gold/gem.
 
-## Restart và dừng
+## Restart and stop
 
 ```bash
 docker compose --env-file .env -f ec2-compose.yaml restart app
 docker compose --env-file .env -f ec2-compose.yaml down
 ```
 
-Restart app giữ dữ liệu DynamoDB và Session Redis. down giữ named Redis volume; dữ liệu AWS vẫn còn. Redis mất Session thì login lại; Player/receipt không mất.
+Restarting the app preserves DynamoDB data and Redis Sessions. down preserves the named Redis volume; AWS data also remains. If Redis loses a Session, log in again; Player/receipts are not lost.
 
-Sau demo: stop/terminate EC2 theo nhu cầu, kiểm tra EBS còn giữ và public IPv4/Elastic IP; xóa bảng nếu không cần dữ liệu. down chỉ dừng container, không dừng tính phí AWS. Xem Billing để xác nhận.
+After the demo: stop/terminate EC2 as needed, check retained EBS and public IPv4/Elastic IP, and delete the table if the data is no longer needed. down only stops containers; it does not stop AWS billing. Check Billing to confirm.
 
-**Đã kiểm tra local; chưa có EC2/SSH hoặc AWS credentials trong môi trường này để kiểm tra cloud thật.**
+**Local verification on 2026-10-02 passed: ./gradlew test integrationTest (9 unit + 14 integration tests), ./gradlew installDist, and the repair-validation Docker build. The image ran as nonroot UID 10001. A rebuilt isolated app on port 18080 returned Swagger HTTP 200 and passed scripts/demo.sh: JSON Login/Init/Static/Daily/Purchase, Protobuf purchase retry, and all four information APIs. Dedicated validation table/keys were cleaned; existing user containers were untouched. Live AWS EC2 has not been verified. The final ./gradlew clean compileJava test integrationTest build passed in 24 seconds.**

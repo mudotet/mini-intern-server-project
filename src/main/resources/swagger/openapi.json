@@ -1,0 +1,157 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Mini Game Server",
+    "version": "1.0.0",
+    "description": "Login → Player Init → Static/Daily Shop → Purchase. JSON and Protobuf use the same handlers and services. Responses match the request Content-Type, not Accept; GET information APIs always return JSON. Protobuf JSON preserves snake_case fields and encodes int64 as strings. Player state, daily snapshots and purchase receipts persist in DynamoDB; Sessions and login retry results use Redis. Guest login recovers identity by Device ID: treat device_id as a credential."
+  },
+  "servers": [{"url": "/", "description": "The server hosting this Swagger page"}],
+  "tags": [
+    {"name": "01 · Login", "description": "Public metadata and guest identity/Session"},
+    {"name": "02 · Player", "description": "Current authenticated Player Resources"},
+    {"name": "03 · Shop", "description": "Static packages and frozen daily offers"},
+    {"name": "04 · Purchase", "description": "Atomic purchase and idempotent retry"},
+    {"name": "05 · Information", "description": "Authenticated read-only GET APIs. No body or RequestId is required. Query parameters do not select another Player."}
+  ],
+  "paths": {
+    "/api/001003": {"post": {
+      "tags": ["01 · Login"], "operationId": "publicInit", "summary": "Public initialization metadata", "security": [],
+      "description": "CommonInitRequest → CommonInitResponseProto. Public server time and versions; not Player Init.",
+      "parameters": [{"$ref": "#/components/parameters/OptionalRequestId"}],
+      "requestBody": {"$ref": "#/components/requestBodies/Empty"},
+      "responses": {
+        "200": {"description": "Server metadata", "headers": {"X-Request-Id": {"$ref": "#/components/headers/RequestId"}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CommonInitResponseProto"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}},
+        "400": {"$ref": "#/components/responses/InvalidRequest"}, "408": {"$ref": "#/components/responses/Timeout"}, "413": {"$ref": "#/components/responses/TooLarge"}, "500": {"$ref": "#/components/responses/InternalError"}
+      }
+    }},
+    "/api/001002": {"post": {
+      "tags": ["01 · Login"], "operationId": "login", "summary": "Create or recover a guest Account", "security": [],
+      "description": "CommonLoginRequestProto → CommonLoginResponseProto. An empty device_id creates one Device/Account/Player with 1000 gold, 100 gem and 0 XP, assigned once. Retry with the original input and RequestId; do not replace an empty device_id with the returned ID when retrying. Known Devices recover identity; optional account_id/player_id must match. A new RequestId creates a new 12-hour Session and replaces the Device's previous Session. Login retry results last up to 12 hours in Redis; use a new RequestId if the cached Session has been replaced or lost.",
+      "parameters": [{"$ref": "#/components/parameters/RequiredRequestId"}],
+      "requestBody": {"required": false, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CommonLoginRequestProto"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}},
+      "responses": {
+        "200": {"description": "Identity and Session", "headers": {"X-Request-Id": {"$ref": "#/components/headers/RequestId"}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CommonLoginResponseProto"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}},
+        "400": {"$ref": "#/components/responses/InvalidRequest"}, "408": {"$ref": "#/components/responses/Timeout"}, "413": {"$ref": "#/components/responses/TooLarge"}, "409": {"$ref": "#/components/responses/Conflict"}, "500": {"$ref": "#/components/responses/InternalError"}
+      }
+    }},
+    "/api/002007": {"post": {
+      "tags": ["02 · Player"], "operationId": "playerInit", "summary": "Read current Player Resources", "security": [{"BearerAuth": []}],
+      "description": "Empty PlayerInitRequestProto → PlayerInitResponseProto. Identity comes from the validated JWT and Redis Session. Repeated calls never refill Resources.",
+      "parameters": [{"$ref": "#/components/parameters/OptionalRequestId"}], "requestBody": {"$ref": "#/components/requestBodies/Empty"},
+      "responses": {
+        "200": {"description": "Current Player state", "headers": {"X-Request-Id": {"$ref": "#/components/headers/RequestId"}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PlayerInitResponseProto"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}},
+        "400": {"$ref": "#/components/responses/InvalidRequest"}, "401": {"$ref": "#/components/responses/Unauthorized"}, "408": {"$ref": "#/components/responses/Timeout"}, "413": {"$ref": "#/components/responses/TooLarge"}, "500": {"$ref": "#/components/responses/InternalError"}
+      }
+    }},
+    "/api/003004": {"post": {
+      "tags": ["03 · Shop"], "operationId": "staticShop", "summary": "Read the static shop", "security": [{"BearerAuth": []}],
+      "description": "Empty → ShopStaticProtoResponse. Six shared packages at their base prices/default rewards, without daily purchase limits. Offer IDs are static:<package_id>.",
+      "parameters": [{"$ref": "#/components/parameters/OptionalRequestId"}], "requestBody": {"$ref": "#/components/requestBodies/Empty"},
+      "responses": {
+        "200": {"description": "Static offers", "headers": {"X-Request-Id": {"$ref": "#/components/headers/RequestId"}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ShopStaticProtoResponse"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}},
+        "400": {"$ref": "#/components/responses/InvalidRequest"}, "401": {"$ref": "#/components/responses/Unauthorized"}, "408": {"$ref": "#/components/responses/Timeout"}, "413": {"$ref": "#/components/responses/TooLarge"}, "500": {"$ref": "#/components/responses/InternalError"}
+      }
+    }},
+    "/api/003005": {"post": {
+      "tags": ["03 · Shop"], "operationId": "dailyShop", "summary": "Read or initialize today's three offers", "security": [{"BearerAuth": []}],
+      "description": "Empty → ShopDailyProtoResponse. Three distinct packages per Player/cycle. Reward quantities and uniform 10/20/30% discounts are resolved once and persisted until midnight Asia/Ho_Chi_Minh. Price is max(1, base × (100 − discount) / 100), using integer division. Each offer allows three purchases. Offer IDs are daily:<cycle_start>:<slot_id>:<package_id>.",
+      "parameters": [{"$ref": "#/components/parameters/OptionalRequestId"}], "requestBody": {"$ref": "#/components/requestBodies/Empty"},
+      "responses": {
+        "200": {"description": "Frozen daily offers and current counters", "headers": {"X-Request-Id": {"$ref": "#/components/headers/RequestId"}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ShopDailyProtoResponse"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}},
+        "400": {"$ref": "#/components/responses/InvalidRequest"}, "401": {"$ref": "#/components/responses/Unauthorized"}, "408": {"$ref": "#/components/responses/Timeout"}, "413": {"$ref": "#/components/responses/TooLarge"}, "409": {"$ref": "#/components/responses/Conflict"}, "500": {"$ref": "#/components/responses/InternalError"}
+      }
+    }},
+    "/api/003002": {"post": {
+      "tags": ["04 · Purchase"], "operationId": "purchase", "summary": "Purchase an offer using gold or gem", "security": [{"BearerAuth": []}],
+      "description": "ShopPurchaseRequestProto → ShopPurchaseResponseProto. Copy id from an offer_id; amount must be 1. The server determines price and rewards. Resource changes, daily counters and receipt commit atomically. Retry with the same Player, RequestId, offer ID and amount returns the original receipt, even after other purchases or expiry, without another mutation. Reusing a RequestId with different input returns 409. Receipts do not expire in this demo.",
+      "parameters": [{"$ref": "#/components/parameters/RequiredRequestId"}],
+      "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ShopPurchaseRequestProto"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}},
+      "responses": {
+        "200": {"description": "Purchase receipt", "headers": {"X-Request-Id": {"$ref": "#/components/headers/RequestId"}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ShopPurchaseResponseProto"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}},
+        "400": {"$ref": "#/components/responses/InvalidRequest"}, "401": {"$ref": "#/components/responses/Unauthorized"}, "404": {"$ref": "#/components/responses/NotFound"}, "408": {"$ref": "#/components/responses/Timeout"}, "413": {"$ref": "#/components/responses/TooLarge"}, "409": {"$ref": "#/components/responses/Conflict"}, "500": {"$ref": "#/components/responses/InternalError"}
+      }
+    }},
+    "/api/info/player": {"get": {
+      "tags": ["05 · Information"], "operationId": "getPlayerProfile", "summary": "Current Player profile", "security": [{"BearerAuth": []}],
+      "description": "PlayerProfileResponseProto. Consistent read of the authenticated Player; never exposes Device ID or token. No body.",
+      "responses": {
+        "200": {"description": "Profile", "headers": {"Cache-Control": {"schema": {"type": "string", "enum": ["no-store"]}}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PlayerProfileResponseProto"}}}},
+        "400": {"$ref": "#/components/responses/JsonInvalidRequest"}, "401": {"$ref": "#/components/responses/JsonUnauthorized"}, "408": {"$ref": "#/components/responses/JsonTimeout"}, "413": {"$ref": "#/components/responses/JsonTooLarge"}, "500": {"$ref": "#/components/responses/JsonInternalError"}
+      }
+    }},
+    "/api/info/resources": {"get": {
+      "tags": ["05 · Information"], "operationId": "getPlayerResources", "summary": "Current gold, gem and XP", "security": [{"BearerAuth": []}],
+      "description": "PlayerResourcesResponseProto. Consistent read after a purchase; never refills InitialResources. int64 quantities are JSON strings. No body.",
+      "responses": {
+        "200": {"description": "Resources", "headers": {"Cache-Control": {"schema": {"type": "string", "enum": ["no-store"]}}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PlayerResourcesResponseProto"}}}},
+        "400": {"$ref": "#/components/responses/JsonInvalidRequest"}, "401": {"$ref": "#/components/responses/JsonUnauthorized"}, "408": {"$ref": "#/components/responses/JsonTimeout"}, "413": {"$ref": "#/components/responses/JsonTooLarge"}, "500": {"$ref": "#/components/responses/JsonInternalError"}
+      }
+    }},
+    "/api/info/packages": {"get": {
+      "tags": ["05 · Information"], "operationId": "getShopPackages", "summary": "Shared package catalog", "security": [{"BearerAuth": []}],
+      "description": "ShopPackagesResponseProto. Base prices, default rewards and daily quantity ranges from the active ShopCatalog. Does not create or reroll daily offers. Use Static/Daily APIs for actual offer IDs and terms. No body.",
+      "responses": {
+        "200": {"description": "Package definitions", "headers": {"Cache-Control": {"schema": {"type": "string", "enum": ["no-store"]}}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ShopPackagesResponseProto"}}}},
+        "400": {"$ref": "#/components/responses/JsonInvalidRequest"}, "401": {"$ref": "#/components/responses/JsonUnauthorized"}, "408": {"$ref": "#/components/responses/JsonTimeout"}, "413": {"$ref": "#/components/responses/JsonTooLarge"}, "500": {"$ref": "#/components/responses/JsonInternalError"}
+      }
+    }},
+    "/api/info/session": {"get": {
+      "tags": ["05 · Information"], "operationId": "getSessionInfo", "summary": "Current authenticated Session", "security": [{"BearerAuth": []}],
+      "description": "SessionInfoResponseProto. Validates JWT signature/expiry and Redis Session before returning identity and remaining JWT lifetime. A replaced or missing Session returns 401 even before JWT expiry. Never exposes access_token, Device ID or Session ID. Times are Unix seconds encoded as strings. No body.",
+      "responses": {
+        "200": {"description": "Session information", "headers": {"Cache-Control": {"schema": {"type": "string", "enum": ["no-store"]}}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SessionInfoResponseProto"}}}},
+        "400": {"$ref": "#/components/responses/JsonInvalidRequest"}, "401": {"$ref": "#/components/responses/JsonUnauthorized"}, "408": {"$ref": "#/components/responses/JsonTimeout"}, "413": {"$ref": "#/components/responses/JsonTooLarge"}, "500": {"$ref": "#/components/responses/JsonInternalError"}
+      }
+    }}
+  },
+  "components": {
+    "securitySchemes": {"BearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT", "description": "Paste access_token from Login without adding the Bearer prefix."}},
+    "headers": {"RequestId": {"description": "Echoed X-Request-Id", "schema": {"type": "string"}}},
+    "parameters": {
+      "OptionalRequestId": {"name": "X-Request-Id", "in": "header", "required": false, "description": "Optional tracing ID", "schema": {"type": "string"}},
+      "RequiredRequestId": {"name": "X-Request-Id", "in": "header", "required": true, "description": "Generate/copy an ID above. New operation: new ID. Retry: same ID and input. The helper does not automatically change submitted headers.", "schema": {"type": "string", "minLength": 16, "maxLength": 128, "pattern": "^[A-Za-z0-9_-]+$"}, "example": "00000000-0000-4000-8000-000000000001"}
+    },
+    "requestBodies": {"Empty": {"required": false, "description": "Select application/json for Try it out; use {} or an empty body. For Protobuf, upload encoded binary. Unknown JSON fields are rejected. Maximum body: 65536 bytes, received within 5 seconds.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/EmptyRequest"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}}},
+    "schemas": {
+      "EmptyRequest": {"type": "object", "additionalProperties": false, "properties": {}, "example": {}},
+      "Int64": {"type": "string", "pattern": "^[0-9]+$", "description": "Nonnegative int64 in Protobuf JSON", "example": "1790787600"},
+      "CommonLoginClientProto": {"type": "object", "additionalProperties": false, "properties": {"platform": {"type": "string"}, "identifier": {"type": "string"}, "version": {"type": "string"}}},
+      "CommonLoginRequestProto": {"type": "object", "additionalProperties": false, "properties": {"device_id": {"type": "string", "maxLength": 128, "description": "Empty creates a Device; retain the returned Device ID for recovery."}, "player_id": {"type": "string", "maxLength": 128, "description": "Optional; must belong to the Device."}, "account_id": {"type": "string", "maxLength": 128, "description": "Optional; must belong to the Device."}, "client": {"$ref": "#/components/schemas/CommonLoginClientProto"}}, "example": {}},
+      "CommonLoginResponseProto": {"type": "object", "additionalProperties": false, "properties": {"device_id": {"type": "string"}, "player_id": {"type": "string"}, "account_id": {"type": "string"}, "access_token": {"type": "string"}, "session_expires_at": {"$ref": "#/components/schemas/Int64"}, "new_account": {"type": "boolean"}}},
+      "CommonInitResponseProto": {"type": "object", "additionalProperties": false, "properties": {"server_time": {"$ref": "#/components/schemas/Int64"}, "contract_version": {"type": "string"}, "configuration_version": {"type": "string"}, "minimum_client_version": {"type": "string"}, "maintenance": {"type": "boolean"}}},
+      "Resource": {"type": "object", "additionalProperties": false, "properties": {"resource_id": {"type": "string", "enum": ["gold", "gem", "xp"]}, "quantity": {"$ref": "#/components/schemas/Int64"}}},
+      "PlayerInitResponseProto": {"type": "object", "additionalProperties": false, "properties": {"account_id": {"type": "string"}, "player_id": {"type": "string"}, "resources": {"type": "array", "items": {"$ref": "#/components/schemas/Resource"}}}},
+      "Price": {"type": "object", "additionalProperties": false, "properties": {"currency": {"type": "object", "additionalProperties": {"type": "integer", "format": "int32", "minimum": 1}, "example": {"gold": 100}}}, "description": "Exactly one gold or gem price, determined by the server."},
+      "Rewards": {"type": "object", "additionalProperties": {"type": "integer", "format": "int32", "minimum": 1}, "example": {"xp": 100}},
+      "StaticOfferProto": {"type": "object", "additionalProperties": false, "properties": {"offer_id": {"type": "string", "example": "static:xp_gold"}, "package_id": {"type": "string", "example": "xp_gold"}, "price": {"$ref": "#/components/schemas/Price"}, "items": {"$ref": "#/components/schemas/Rewards"}}},
+      "ShopStaticSlotResponse": {"type": "object", "additionalProperties": false, "properties": {"slot_id": {"type": "string"}, "offer": {"$ref": "#/components/schemas/StaticOfferProto"}}},
+      "ShopStaticProtoResponse": {"type": "object", "additionalProperties": false, "properties": {"slots": {"type": "array", "items": {"$ref": "#/components/schemas/ShopStaticSlotResponse"}}, "server_time": {"$ref": "#/components/schemas/Int64"}}},
+      "DailyOfferProto": {"type": "object", "additionalProperties": false, "properties": {"offer_id": {"type": "string", "example": "daily:1790701200:slot_1:xp_gold"}, "package_id": {"type": "string"}, "original_price": {"$ref": "#/components/schemas/Price"}, "final_price": {"$ref": "#/components/schemas/Price"}, "items": {"$ref": "#/components/schemas/Rewards"}, "discount_percent": {"type": "integer", "format": "int32", "enum": [10, 20, 30]}, "purchased": {"type": "integer", "format": "int32", "minimum": 0, "maximum": 3}, "remaining": {"type": "integer", "format": "int32", "minimum": 0, "maximum": 3}, "purchase_limit": {"type": "integer", "format": "int32", "enum": [3]}}},
+      "ShopDailySlotResponse": {"type": "object", "additionalProperties": false, "properties": {"slot_id": {"type": "string"}, "offer": {"$ref": "#/components/schemas/DailyOfferProto"}}},
+      "ShopDailyProtoResponse": {"type": "object", "additionalProperties": false, "properties": {"cycle_start": {"$ref": "#/components/schemas/Int64"}, "expires_at": {"$ref": "#/components/schemas/Int64"}, "server_time": {"$ref": "#/components/schemas/Int64"}, "slots": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"$ref": "#/components/schemas/ShopDailySlotResponse"}}}},
+      "ShopPurchaseRequestProto": {"type": "object", "additionalProperties": false, "required": ["id", "amount"], "properties": {"id": {"type": "string", "maxLength": 160, "description": "offer_id from Static/Daily response", "example": "static:xp_gold"}, "amount": {"type": "integer", "format": "int32", "enum": [1], "default": 1}}, "example": {"id": "static:xp_gold", "amount": 1}},
+      "ShopPurchaseResponseProto": {"type": "object", "additionalProperties": false, "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Resource"}}, "resources": {"type": "array", "items": {"$ref": "#/components/schemas/Resource"}}, "offer_id": {"type": "string"}}, "description": "items are awarded rewards; resources are the post-purchase state. Retry returns the original receipt."},
+      "PlayerProfileResponseProto": {"type": "object", "additionalProperties": false, "properties": {"account_id": {"type": "string"}, "player_id": {"type": "string"}}},
+      "PlayerResourcesResponseProto": {"type": "object", "additionalProperties": false, "properties": {"player_id": {"type": "string"}, "resources": {"type": "array", "items": {"$ref": "#/components/schemas/Resource"}}}},
+      "RewardQuantityRange": {"type": "object", "additionalProperties": false, "properties": {"min": {"type": "integer", "format": "int32", "minimum": 1}, "max": {"type": "integer", "format": "int32", "minimum": 1}}},
+      "ShopPackage": {"type": "object", "additionalProperties": false, "properties": {"id": {"type": "string", "example": "xp_gold"}, "price": {"$ref": "#/components/schemas/Price"}, "items": {"$ref": "#/components/schemas/Rewards"}, "daily_reward_ranges": {"type": "object", "additionalProperties": {"$ref": "#/components/schemas/RewardQuantityRange"}}}},
+      "ShopPackagesResponseProto": {"type": "object", "additionalProperties": false, "properties": {"packages": {"type": "array", "items": {"$ref": "#/components/schemas/ShopPackage"}}}},
+      "SessionInfoResponseProto": {"type": "object", "additionalProperties": false, "properties": {"account_id": {"type": "string"}, "player_id": {"type": "string"}, "expires_at": {"$ref": "#/components/schemas/Int64"}, "server_time": {"$ref": "#/components/schemas/Int64"}, "remaining_seconds": {"$ref": "#/components/schemas/Int64"}}},
+      "BusinessErrorProto": {"type": "object", "additionalProperties": false, "properties": {"code": {"type": "string"}, "message": {"type": "string"}}, "example": {"code": "PURCHASE_LIMIT", "message": "Daily offer can only be purchased three times"}}
+    },
+    "responses": {
+      "InvalidRequest": {"description": "Invalid input, content type, JSON/Protobuf or RequestId", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessErrorProto"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}},
+      "Unauthorized": {"description": "AUTH_INVALID: JWT/Session missing, invalid, expired or replaced", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessErrorProto"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}},
+      "NotFound": {"description": "OFFER_NOT_FOUND: unknown offer", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessErrorProto"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}},
+      "Conflict": {"description": "Identity/input mismatch, insufficient funds, expired offer, purchase limit or concurrent retry. RETRY requires identical input and RequestId.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessErrorProto"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}},
+      "Timeout": {"description": "INVALID_REQUEST: request body was not received within 5 seconds", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessErrorProto"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}},
+      "TooLarge": {"description": "INVALID_REQUEST: request body exceeds 65536 bytes", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessErrorProto"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}},
+      "InternalError": {"description": "INTERNAL_ERROR: unexpected server error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessErrorProto"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}},
+      "JsonInvalidRequest": {"description": "INVALID_REQUEST: wrong method or nonempty GET body", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessErrorProto"}}}},
+      "JsonUnauthorized": {"description": "AUTH_INVALID: JWT/Session missing, invalid, expired or replaced", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessErrorProto"}}}},
+      "JsonTimeout": {"description": "INVALID_REQUEST: request body timeout", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessErrorProto"}}}},
+      "JsonTooLarge": {"description": "INVALID_REQUEST: request body exceeds 65536 bytes", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessErrorProto"}}}},
+      "JsonInternalError": {"description": "INTERNAL_ERROR: unexpected server error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessErrorProto"}}}}
+    }
+  }
+}

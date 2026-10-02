@@ -1,0 +1,29 @@
+services:
+  app:
+    image: mini-game-server:ec2
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      AWS_REGION: ${AWS_REGION:?AWS_REGION is required}
+      GAME_TABLE: ${GAME_TABLE:?GAME_TABLE is required}
+      DYNAMODB_MODE: aws
+      REDIS_HOST: redis
+    depends_on:
+      redis:
+        condition: service_healthy
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  redis-data:

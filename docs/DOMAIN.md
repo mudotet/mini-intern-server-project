@@ -1,11 +1,11 @@
 # Domain
 
-[CONTEXT.md](../CONTEXT.md) là glossary; [ROADMAP.md](ROADMAP.md) ghi quy tắc demo.
+[CONTEXT.md](../CONTEXT.md) is the glossary; [ROADMAP.md](ROADMAP.md) records demo rules.
 
-Account sở hữu một Player; Device liên kết Account; Session xác thực identity. InitialResources được cấp trong transaction tạo Player, Player Init chỉ đọc.
+Account owns one Player; Device links to Account; Session authenticates identity. InitialResources are granted in the Player creation transaction; Player Init only reads.
 
-ShopPackage giữ giá gốc, loại Resource, quantity static và daily range. DailyOffer chọn package, discount và quantity một lần/player/cycle. Snapshot giữ kết quả và counter, lưu trong DynamoDB.
+ShopPackage holds base price, Resource types, static quantities, and daily ranges. DailyOffer selects package, discount, and quantities once/player/cycle. Snapshot retains the results and counters in DynamoDB.
 
-Purchase đọc static config hoặc daily snapshot, trừ gold/gem và cộng Resource. Player/version/counter cùng receipt được ghi atomically. RequestId của purchase gắn với Player và input, retry trả kết quả cũ.
+Purchase reads static configuration or a daily snapshot, debits gold/gem, and credits Resources. Player/version/counter and receipt are written atomically. Purchase RequestId is tied to Player and input; retries return the original result.
 
-Đây là các flow đã có source và test local. Guest login chỉ phục vụ demo; triển khai hiện tại liên kết một Device/Account. Source kiến trúc nằm trong [ARCHITECTURE.md](ARCHITECTURE.md).
+These flows have source code and local tests. Local verification passed 9 unit + 14 integration tests and the isolated Docker demo on 2026-10-02; live AWS EC2 remains unverified. The final ./gradlew clean compileJava test integrationTest build passed in 24 seconds. Guest login is for the demo only; the current implementation links one Device/Account. See [ARCHITECTURE.md](ARCHITECTURE.md) for the architecture.

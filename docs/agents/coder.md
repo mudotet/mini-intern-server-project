@@ -1,14 +1,14 @@
 # Coder
 
-Đọc [CONTEXT.md](../../CONTEXT.md), [ROADMAP.md](../ROADMAP.md) và [API contract](../API_CONTRACT.md). Làm một flow đến khi chạy được rồi mới sang flow tiếp.
+Read [CONTEXT.md](../../CONTEXT.md), [ROADMAP.md](../ROADMAP.md), and the [API contract](../API_CONTRACT.md). Complete one working flow before moving to the next.
 
-- Handler parse request, gọi service và trả Protobuf; service xử lý nghiệp vụ; DAO đọc/ghi DynamoDB. Redis giữ Session.
-- Dùng class/constructor đơn giản. Service được gọi DAO cụ thể. Gom mapping vào nơi dùng; chỉ tách mapper/interface/helper khi giảm lặp thật.
-- Tạo model, service và DAO có xử lý khi flow cần; tránh dựng khung cho các flow chưa làm.
-- Player identity lấy từ JWT/Session đã kiểm tra. Tài nguyên được cấp trong transaction tạo Player; Player Init chỉ đọc.
-- Daily random package, quantity và discount một lần, lưu snapshot. Purchase dùng kết quả đã lưu và kiểm tra giới hạn/expiry.
-- Purchase phải ghi tiền, reward, lượt mua và receipt cùng giao dịch; retry không thay đổi state lần hai.
-- Sửa proto nguồn, giữ field numbers của contract đang dùng; sinh Java bằng Gradle.
-- Sau chỉnh sửa chạy compile/test phù hợp, đọc diff và báo đúng phần đã chạy. Test mock khác test Redis/DynamoDB thật.
+- Handlers parse requests, call services, and return Protobuf; services handle business rules; DAOs read/write DynamoDB. Redis holds Sessions.
+- Use simple classes/constructors. Services may call concrete DAOs. Keep mapping where it is used; extract mappers/interfaces/helpers only when they remove actual duplication.
+- Create models, services, and DAOs with meaningful behavior when the flow needs them; avoid scaffolding for future flows.
+- Obtain Player identity from validated JWT/Session. Grant Resources in the Player creation transaction; Player Init only reads.
+- Daily randomizes packages, quantities, and discounts once and stores a snapshot. Purchase uses the stored results and checks limits/expiry.
+- Purchase must write currency, rewards, purchase count, and receipt in one transaction; retries must not change state twice.
+- Edit source protos, retain field numbers of contracts in use, and generate Java with Gradle.
+- After edits, run appropriate compile/tests, review the diff, and report exactly what ran. Mock tests differ from tests using real Redis/DynamoDB.
 
-Làm trong checkout hiện tại của mini-intern-server-project; xem Git status trước khi sửa. Giữ thay đổi có nội dung của người dùng và không sửa server-intern. Phạm vi theo roadmap; dependency thêm mới phải phục vụ flow đang làm.
+Work in the current mini-intern-server-project checkout; check Git status before editing. Preserve meaningful user changes and do not modify server-intern. Follow the roadmap scope; new dependencies must serve the current flow.

@@ -1,17 +1,17 @@
 # Mini game server demo
 
-Đọc CONTEXT.md cho thuật ngữ và docs/ROADMAP.md cho flow đang làm. Kiểm tra source và Git status trong checkout hiện tại trước khi chỉnh sửa.
+Read CONTEXT.md for terminology and docs/ROADMAP.md for the current flow. Check the source and Git status in the current checkout before editing.
 
-## Cách làm
+## Working approach
 
-- Làm từng flow: handler → service → DAO → dữ liệu → response.
-- Dùng Java 11, Akka HTTP, Protobuf, Redis và DynamoDB đang có trong build.
-- Service có thể gọi DAO cụ thể; tạo interface/base/helper khi có nhu cầu thật.
-- Tạo model/service/DAO khi triển khai flow cần chúng; mỗi file cần có nội dung và vai trò rõ.
-- Giữ thay đổi trong mini-intern-server-project. Bảo toàn thay đổi có nội dung của người dùng; việc dọn khung rỗng đã được yêu cầu trong phiên này.
-- Phạm vi demo: login, Player Init, static/daily shop, purchase và deploy EC2 + DynamoDB.
-- Các flow Login/Player Init/shop/purchase đã triển khai; phân biệt test local với xác minh AWS thật.
-- Xem docs/agents/README.md khi cần hướng dẫn theo vai trò.
+- Implement one flow at a time: handler → service → DAO → data → response.
+- Use Java 11, Akka HTTP, Protobuf, Redis, and DynamoDB already included in the build.
+- Services may call concrete DAOs; create interfaces/base classes/helpers when a real need arises.
+- Create models/services/DAOs when the implemented flow needs them; each file must have meaningful content and a clear role.
+- Keep changes within mini-intern-server-project. Preserve meaningful user changes; cleanup of empty scaffolding was requested in this session.
+- Demo scope: login, Player Init, static/daily shop, purchase, and EC2 + DynamoDB deployment.
+- Login/Player Init/shop/purchase flows are implemented; distinguish local tests from live AWS verification. Local verification passed 9 unit + 14 integration tests and the isolated Docker demo on 2026-10-02; live AWS EC2 remains unverified. The final ./gradlew clean compileJava test integrationTest build passed in 24 seconds.
+- For role-specific work, read the matching guide in docs/agents/: coder.md, tester.md, pm.md, or deployer.md.
 
 ## Agent skills
 

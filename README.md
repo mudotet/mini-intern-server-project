@@ -1,10 +1,10 @@
 # Mini game server
 
-Backend demo dùng Java 11, Akka HTTP, Protobuf, Redis và DynamoDB. Các flow đã có xử lý: Login → Player Init → Static/Daily Shop → Purchase.
+Backend demo using Java 11, Akka HTTP, Protobuf, Redis, and DynamoDB. Implemented flows: Login → Player Init → Static/Daily Shop → Purchase.
 
-## Chạy local
+## Run locally
 
-Cần Java 11, Docker Compose, Python 3, curl và protoc. Trong thư mục repo:
+Requires Java 11, Docker Compose, Python 3, curl, and protoc. From the repository directory:
 
 ```bash
 bash scripts/run-local.sh
@@ -12,43 +12,43 @@ docker compose -f docker/docker-compose.yaml logs app
 bash scripts/demo.sh
 ```
 
-Script tạo JWT secret ngẫu nhiên trong .env nếu chưa có secret hợp lệ, build Java distribution và chạy app + Redis + DynamoDB Local. Chờ log “Mini game API ready” trước khi chạy demo. App ở http://localhost:8080; dữ liệu local nằm trong docker/data và được bỏ qua bởi Git.
+The script generates a random JWT secret in .env if no valid secret exists, builds the Java distribution, and starts the app + Redis + DynamoDB Local. Wait for the “Mini game API ready” log before running the demo. The app is at http://localhost:8080; local data is stored in docker/data and ignored by Git.
 
 ## Swagger UI
 
-Mở [http://localhost:8080/swagger/](http://localhost:8080/swagger/) để xem 10 endpoint và thử bằng JSON:
+Open [http://localhost:8080/swagger/](http://localhost:8080/swagger/) to view the 10 endpoints and try them using JSON:
 
-1. Tạo/Copy RequestId ở đầu trang, paste vào X-Request-Id của Login; Execute với body {}.
-2. Copy access_token từ response → Authorize, paste token.
-3. Gọi Player Init, Static và Daily; Purchase với offer ID đã nhận, amount=1.
-4. Lượt mua mới dùng RequestId mới; retry giữ nguyên ID/input.
+1. Create/copy a RequestId at the top of the page and paste it into Login's X-Request-Id; execute with body {}.
+2. Copy access_token from the response → Authorize, and paste the token.
+3. Call Player Init, Static, and Daily; call Purchase with a returned offer ID and amount=1.
+4. Use a new RequestId for a new purchase; keep the same ID/input for retries.
 
-Swagger assets nằm trong app nên trang không cần CDN. JSON dùng cùng schema/handler/service với Protobuf; int64 (quantity/time) là string. Xem [API contract](docs/API_CONTRACT.md).
+Swagger assets are bundled with the app, so the page needs no CDN. JSON uses the same schema/handler/service as Protobuf; int64 values (quantity/time) are strings. See the [API contract](docs/API_CONTRACT.md).
 
-### 05 · Thông tin
+### 05 · Information
 
-Sau Login → Authorize, dùng các API GET dưới đây để lấy dữ liệu hiển thị. Không cần body hoặc RequestId; response luôn là JSON.
+After Login → Authorize, use the following GET APIs to retrieve display data. No body or RequestId is required; responses are always JSON.
 
-| API | Dữ liệu |
+| API | Data |
 | --- | --- |
-| GET /api/info/player | account_id, player_id của Player hiện tại |
-| GET /api/info/resources | Resource gold/gem/XP mới nhất; gọi lại sau Purchase |
-| GET /api/info/packages | Định nghĩa Package: giá gốc, reward mặc định, khoảng quantity daily |
-| GET /api/info/session | Account/Player của phiên, expires_at, server_time, remaining_seconds |
+| GET /api/info/player | account_id and player_id of the current Player |
+| GET /api/info/resources | Latest gold/gem/XP Resources; call again after Purchase |
+| GET /api/info/packages | Package definitions: base price, default rewards, daily quantity ranges |
+| GET /api/info/session | Session Account/Player, expires_at, server_time, remaining_seconds |
 
-Các API đọc không cấp lại tài nguyên hoặc tạo DailyOffer. API session không trả credentials; thời gian còn lại là hạn JWT, Session Redis có thể mất/bị thay thế sớm hơn.
+These read APIs do not grant Resources again or create DailyOffers. The session API does not return credentials; remaining time refers to JWT expiry, and the Redis Session may be lost or replaced earlier.
 
-## Đọc code
+## Read the code
 
 Request → handler → service → GameDao → DynamoDB/Redis → response.
 
-- Login tạo Account/Device/Player và cấp 1.000 gold, 100 gem, 0 XP một lần.
-- Session JWT có hạn 12 giờ, kiểm tra chữ ký/expiry và Session Redis.
-- Static có 6 package giá/reward cố định.
-- Daily có 3 package khác nhau/player/ngày; random quantity và discount 10/20/30%, giữ trong ngày; 3 lần mua/offer.
-- Purchase cập nhật Player và receipt trong cùng DynamoDB transaction; retry trả receipt cũ.
+- Login creates Account/Device/Player and grants 1,000 gold, 100 gem, and 0 XP once.
+- Session JWTs expire after 12 hours; authentication checks signature/expiry and the Redis Session.
+- Static has 6 packages with fixed prices/rewards.
+- Daily has 3 distinct packages/player/day; quantity and a 10/20/30% discount are randomized and retained for the day; 3 purchases/offer.
+- Purchase updates Player and receipt in the same DynamoDB transaction; retries return the original receipt.
 
-## Test và deploy
+## Test and deploy
 
 ```bash
 ./gradlew test
@@ -56,6 +56,6 @@ Request → handler → service → GameDao → DynamoDB/Redis → response.
 bash scripts/package-ec2.sh
 ```
 
-integrationTest cần Redis/DynamoDB Local đang chạy; dùng namespace riêng rồi dọn dữ liệu test. Bộ deploy EC2 nằm trong deploy/. AWS runtime dùng IAM role, không dùng credentials local. **AWS thật chưa được kiểm tra trong phiên triển khai này.**
+integrationTest requires running Redis/DynamoDB Local; it uses a separate namespace and cleans up test data. The EC2 deployment bundle is in deploy/. The AWS runtime uses an IAM role, not local credentials. **Local verification passed 9 unit + 14 integration tests, installDist, the repair-validation Docker build (nonroot UID 10001), and the isolated app demo on port 18080 on 2026-10-02. Swagger returned HTTP 200; JSON game flows, Protobuf purchase retry, and all four information APIs passed. Dedicated validation data was cleaned; existing user containers were untouched. Live AWS EC2 remains unverified; the final ./gradlew clean compileJava test integrationTest build passed in 24 seconds.**
 
-Đọc [cách chạy/deploy](docs/DEPLOYMENT.md), [API](docs/API_CONTRACT.md), [kiến trúc](docs/ARCHITECTURE.md), [test](docs/TESTING.md), [roadmap](docs/ROADMAP.md) và [glossary](CONTEXT.md).
+Read [running/deployment](docs/DEPLOYMENT.md), [API](docs/API_CONTRACT.md), [architecture](docs/ARCHITECTURE.md), [testing](docs/TESTING.md), [roadmap](docs/ROADMAP.md), and the [glossary](CONTEXT.md).

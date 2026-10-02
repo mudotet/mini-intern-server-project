@@ -1,14 +1,14 @@
-# Kiểm tra
+# Testing
 
-Đọc [ROADMAP.md](../ROADMAP.md), [API contract](../API_CONTRACT.md) và [TESTING.md](../TESTING.md). Kiểm tra hành vi của flow đang làm.
+Read [ROADMAP.md](../ROADMAP.md), the [API contract](../API_CONTRACT.md), and [TESTING.md](../TESTING.md). Verify the current flow's behavior.
 
-- API test đi qua routes mà Main dùng, có header và content type thật.
-- Login cùng Device giữ identity; Player Init không cấp lại tài nguyên; JWT/Session sai hoặc hết hạn bị từ chối.
-- Static giữ giá/reward mặc định. Daily có 3 package khác nhau; reward/discount giữ nguyên trong ngày và sau restart.
-- Daily mua 3 lần, lần 4 bị từ chối. Thiếu tiền/offer hết hạn không đổi state.
-- Retry cùng RequestId/input không trừ/cộng lần hai; request cạnh tranh không tiêu quá tiền/lượt.
-- Kiểm tra đổi ngày bằng Clock, random bằng nguồn có thể kiểm soát trong test.
-- Proto sửa phải generate và compile; loại trừ generated class cũ làm che import thiếu.
-- Test với mock không chứng minh Redis/DynamoDB Local hoặc AWS hoạt động; ghi rõ môi trường đã dùng.
+- API tests use the routes used by Main, with real headers and content types.
+- Login with the same Device retains identity; Player Init does not grant Resources again; invalid or expired JWT/Session is rejected.
+- Static retains default prices/rewards. Daily has 3 distinct packages; rewards/discounts remain unchanged during the day and after restart.
+- Daily permits 3 purchases and rejects the fourth. Insufficient funds/expired offers do not change state.
+- Retry with the same RequestId/input does not debit/credit twice; competing requests cannot overspend currency or purchase allowance.
+- Test day changes using Clock and randomness with a controllable test source.
+- Generate and compile modified protos; exclude stale generated classes that could hide missing imports.
+- Mock tests do not prove Redis/DynamoDB Local or AWS works; state the environment used.
 
-Thêm test cho rủi ro nghiệp vụ hoặc regression thật. Báo lệnh, kết quả và giới hạn kiểm tra; chỉnh test/production code theo hành vi đúng. Làm trong checkout hiện tại và giữ các thay đổi có nội dung của người dùng.
+Add tests for real business risks or regressions. Report commands, results, and verification limits; adjust tests/production code to the correct behavior. Work in the current checkout and preserve meaningful user changes.
