@@ -33,9 +33,9 @@ PY
 ID="$(new_id)"
 request /api/003002 "$(<"$TMP/purchase.json")" "$ID" > "$TMP/receipt.json"
 python3 -m json.tool "$TMP/receipt.json"
-protoc -I "$ROOT/src/main/proto" --encode=game.app.ShopPurchaseRequestProto "$ROOT/src/main/proto/game/app/shop/shop_purchase_request.proto" < "$TMP/purchase.txt" > "$TMP/purchase.bin"
+protoc -I "$ROOT/server/src/main/proto" --encode=game.app.ShopPurchaseRequestProto "$ROOT/server/src/main/proto/game/app/shop/shop_purchase_request.proto" < "$TMP/purchase.txt" > "$TMP/purchase.bin"
 curl --fail-with-body --silent --show-error "$BASE/api/003002" -H 'Content-Type: application/x-protobuf' -H "Authorization: Bearer $TOKEN" -H "X-Request-Id: $ID" --data-binary "@$TMP/purchase.bin" > "$TMP/receipt.bin"
-protoc -I "$ROOT/src/main/proto" --decode=game.app.ShopPurchaseResponseProto "$ROOT/src/main/proto/game/app/shop/shop_purchase_response.proto" < "$TMP/receipt.bin"
+protoc -I "$ROOT/server/src/main/proto" --decode=game.app.ShopPurchaseResponseProto "$ROOT/server/src/main/proto/game/app/shop/shop_purchase_response.proto" < "$TMP/receipt.bin"
 for path in player resources packages session; do
     curl --fail-with-body --silent --show-error "$BASE/api/info/$path" -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
 done

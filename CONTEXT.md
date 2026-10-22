@@ -52,3 +52,17 @@ A Player's exchange of Gold or Gems for a ShopPackage's rewards under its applic
 
 **RequestId**:
 A client-assigned identity for one retryable operation. Reuse is valid only when the operation input is identical.
+
+### Proto Tool
+
+**ProtoSchema**:
+The shared definition of messages, fields, and enums used by client and server.
+Editing a ProtoSchema changes the protocol contract, not the game configuration values represented by that contract.
+
+**ProtoRevision**:
+The complete set of ProtoSchemas at one specific repository commit, identified by its full commit SHA.
+A committed schema change produces a new ProtoRevision; editing or exporting files does not change the selected ProtoRevision.
+
+**ProtoDraft**:
+An editable set of ProtoSchemas based on a selected ProtoRevision.
+A ProtoDraft can be exported without being committed to the source repository.

@@ -3,6 +3,13 @@
 ## Local Docker setup
 
 Requires Java 11 + Docker Compose + Python 3; curl/protoc are needed for the demo script.
+Initialize the pinned schema submodule from the repository root before building:
+
+```bash
+git submodule update --init --recursive
+```
+
+For a new checkout, use `git clone --recurse-submodules`; see the [server README](../server/README.md).
 
 ```bash
 bash scripts/run-local.sh

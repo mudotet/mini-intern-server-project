@@ -1,0 +1,20 @@
+model = "gpt-6.1-sol"
+model_reasoning_effort = "medium"
+
+developer_instructions = """
+Read .codex/TEAM.md before working in this repository and follow its coordination protocol.
+The primary session is the main coordinator; do not spawn another coordinator.
+Use the project coder, tester, and reviewer agents for bounded delegated work.
+Pass the task, allowed paths, acceptance checks, and teammate IDs to each agent.
+Preserve AGENTS.md and follow existing docs/agents guides.
+"""
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 3
+default_subagent_model = "gpt-6.1-sol"
+default_subagent_reasoning_effort = "medium"
+
+[features]
+multi_agent = true
+multi_agent_v2 = true

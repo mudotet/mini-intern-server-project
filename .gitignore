@@ -18,3 +18,12 @@ docker/data/
 # Understand Anything generated analysis artifacts
 .ua/
 .understand-anything/
+
+# Proto Studio dependencies and generated artifacts
+/tool/node_modules/
+/tool/dist/
+/tool/.vite/
+/tool/coverage/
+/tool/playwright-report/
+/tool/test-results/
+/tool/artifacts/

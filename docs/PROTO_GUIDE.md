@@ -1,6 +1,10 @@
 # Protobuf for the demo
 
-Sources are in [src/main/proto](../src/main/proto), with generated Java in build/generated. Edit sources, then run Gradle; do not commit generated files.
+Sources are in [server/src/main/proto](../server/src/main/proto), with generated Java in server/build/generated.
+This directory is a Git submodule of the [canonical schema repository](https://github.com/mudotet/proto_mini-intern-server-project).
+Initialize it from the project root with `git submodule update --init --recursive` before building.
+Edit and commit schemas in the canonical repository, then update the server's pinned revision as described in the [server README](../server/README.md).
+Run Gradle to regenerate Java; do not commit generated files.
 
 | Group | File | Purpose |
 | --- | --- | --- |
@@ -12,7 +16,9 @@ Sources are in [src/main/proto](../src/main/proto), with generated Java in build
 | Model | resource.proto, shop.proto | Resources and persisted daily snapshot |
 | Error | error.proto | BusinessErrorProto |
 
-11 proto files serve the runtime. Unused Player/Initial/Currency schemas have been removed: Player is stored as DynamoDB attributes, InitialResources are defined in PlayerState, and resource IDs are validated in ShopCatalog. Do not retain a schema solely because its name resembles a domain concept.
+The pinned schema set contains 14 proto files.
+Unused Player/Initial/Currency schemas have been removed: Player is stored as DynamoDB attributes, InitialResources are defined in PlayerState, and resource IDs are validated in ShopCatalog.
+Do not retain a schema solely because its name resembles a domain concept.
 
 Proto3 scalars default to 0. When protoc decodes to text, quantity=0, purchased=0, or remaining=0 may not be printed; clients still read 0.
 

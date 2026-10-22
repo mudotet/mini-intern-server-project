@@ -17,7 +17,8 @@ If either path doesn't exist, **proceed silently**. Don't flag its absence; don'
 ├── docs/adr/
 │   ├── 0001-event-sourced-orders.md
 │   └── 0002-postgres-for-write-model.md
-└── src/
+├── server/src/
+└── tool/
 ```
 
 ## Use the glossary's vocabulary

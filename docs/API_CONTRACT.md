@@ -72,4 +72,6 @@ BusinessErrorProto contains code and message. Responses contain no exception/sta
 | 409 | IDENTITY_MISMATCH, REQUEST_ID_REUSED, INSUFFICIENT_FUNDS, OFFER_EXPIRED, PURCHASE_LIMIT, RETRY |
 | 500 | INTERNAL_ERROR |
 
-RETRY: resend the same body/RequestId. Unknown routes return 404. See the [schemas](../src/main/proto) and [demo script](../scripts/demo.sh) for encoding/decoding.
+RETRY: resend the same body/RequestId.
+Unknown routes return 404.
+See the [schemas](../server/src/main/proto) and [demo script](../scripts/demo.sh) for encoding/decoding.

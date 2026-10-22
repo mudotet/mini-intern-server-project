@@ -44,6 +44,8 @@ If Redis loses a Session, the client logs in again. Account/Player, Resources, a
 
 ## Configuration
 
-[shop.textproto](../src/main/resources/shop.textproto) uses ShopBlueprint: default rewards for static, min/max for daily, slot/candidate/discount/cycle. ShopCatalog validates it at startup. Clock and Random are injected into services to test day changes; no scheduler is used.
+[shop.textproto](../server/src/main/resources/shop.textproto) uses ShopBlueprint: default rewards for static, min/max for daily, slot/candidate/discount/cycle.
+ShopCatalog validates it at startup.
+Clock and Random are injected into services to test day changes; no scheduler is used.
 
 EC2 runs the app + Redis; DynamoDB is the AWS service in the same region. See [DEPLOYMENT.md](DEPLOYMENT.md).
