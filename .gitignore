@@ -11,6 +11,7 @@ build
 /.project
 /.settings
 /.gradle
+/.context/
 /server/.gradle/
 /RUNNING_PID
 
