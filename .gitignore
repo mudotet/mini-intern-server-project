@@ -27,3 +27,6 @@ docker/data/
 /tool/playwright-report/
 /tool/test-results/
 /tool/artifacts/
+
+# Conductor workspace notes and screenshots
+/.context/
