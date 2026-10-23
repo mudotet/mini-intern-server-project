@@ -19,6 +19,7 @@
     <p>Login → copy <code>access_token</code> → <strong>Authorize</strong> → Player Init → Shop → Purchase.</p>
     <p>Select <code>application/json</code> to enter and view data. Use a new RequestId for each new operation; keep the same ID and input when retrying, including across JSON and Protobuf.</p>
     <p><strong>05 · Information</strong> provides authenticated GET APIs for Player, current Resources, Packages and Session. No body or RequestId is required.</p>
+    <p><strong>06 · Battle Pass</strong>: view the active pass → grant demo Quest EXP → buy Premium with Gems → claim one reached node. Each node needs 500 expBP and grants one reward. Quest simulation requires <code>DEMO_QUEST_GRANTS_ENABLED=true</code> and is enabled in the local Docker demo.</p>
     <button id="new-request-id" type="button">Generate RequestId</button>
     <input id="request-id" aria-label="RequestId" readonly>
     <button id="copy-request-id" type="button">Copy RequestId</button>

@@ -15,13 +15,13 @@ State the reason for task-specific overrides and report unavailable models inste
 | Agent | Responsibility | Guide |
 | --- | --- | --- |
 | Main | Own scope, split tasks, assign files, settle decisions, integrate and report | `docs/agents/pm.md` |
-| `coder` | Implement one complete handler/service/DAO flow and relevant tests | `docs/agents/coder.md` |
-| `tester` | Reproduce failures and verify behavior; edit only assigned test files | `docs/agents/tester.md` |
-| `reviewer` | Inspect correctness, security, contracts, and evidence without editing | `docs/agents/coder.md`, `docs/agents/tester.md` |
+| `coder` | Implement one complete handler/service/DAO flow and relevant tests | `server/docs/agents/coder.md` |
+| `tester` | Reproduce failures and verify behavior; edit only assigned test files | `server/docs/agents/tester.md` |
+| `reviewer` | Inspect correctness, security, contracts, and evidence without editing | `server/docs/agents/coder.md`, `server/docs/agents/tester.md` |
 
 ## Coordination Rules
 
-1. Main reads `AGENTS.md`, `CONTEXT.md`, `docs/ROADMAP.md`, and Git status before assigning work.
+1. Main reads `AGENTS.md`, `CONTEXT.md`, `server/docs/ROADMAP.md`, and Git status before assigning work.
 2. Main delegates meaningful independent work to the project agents; keep trivial or dependent steps inline.
 3. Each assignment includes a task ID, objective, allowed files, dependencies, acceptance checks, and known teammate IDs.
 4. Main shares newly spawned teammate IDs with the other agents so they can address each other.

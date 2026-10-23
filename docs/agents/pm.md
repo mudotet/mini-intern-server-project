@@ -1,6 +1,6 @@
 # Planning
 
-Read [CONTEXT.md](../../CONTEXT.md) and [ROADMAP.md](../ROADMAP.md). The goal is a backend demo that can be explained and run on EC2 with Redis/DynamoDB.
+Read [CONTEXT.md](../../CONTEXT.md) and [ROADMAP.md](../../server/docs/ROADMAP.md). The goal is a backend demo that can be explained and run on EC2 with Redis/DynamoDB.
 
 Order: Login + Player Init → StaticShop → DailyShop → Purchase → Docker/AWS.
 

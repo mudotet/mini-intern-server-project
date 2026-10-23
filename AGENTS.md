@@ -1,6 +1,6 @@
 # Mini game server demo
 
-Read CONTEXT.md for terminology and docs/ROADMAP.md for the current flow. Check the source and Git status in the current checkout before editing.
+Read CONTEXT.md for terminology and server/docs/ROADMAP.md for the current flow. Check the source and Git status in the current checkout before editing.
 
 ## Working approach
 
@@ -11,7 +11,7 @@ Read CONTEXT.md for terminology and docs/ROADMAP.md for the current flow. Check 
 - Keep changes within mini-intern-server-project. Preserve meaningful user changes; cleanup of empty scaffolding was requested in this session.
 - Demo scope: login, Player Init, static/daily shop, purchase, and EC2 + DynamoDB deployment.
 - Login/Player Init/shop/purchase flows are implemented; distinguish local tests from live AWS verification. Local verification passed 9 unit + 14 integration tests and the isolated Docker demo on 2026-10-02; live AWS EC2 remains unverified. The final ./gradlew clean compileJava test integrationTest build passed in 24 seconds.
-- For role-specific work, read the matching guide in docs/agents/: coder.md, tester.md, pm.md, or deployer.md.
+- For role-specific work, read the matching guide in server/docs/agents/ for coder.md, tester.md, or deployer.md; docs/agents/ for pm.md.
 
 ## Agent skills
 

@@ -11,19 +11,21 @@ build
 /.project
 /.settings
 /.gradle
+/.context/
+/server/.gradle/
 /RUNNING_PID
 
-docker/data/
+/server/docker/data/
 
 # Understand Anything generated analysis artifacts
 .ua/
 .understand-anything/
 
 # Proto Studio dependencies and generated artifacts
-/tool/node_modules/
-/tool/dist/
-/tool/.vite/
-/tool/coverage/
-/tool/playwright-report/
-/tool/test-results/
-/tool/artifacts/
+/client/node_modules/
+/client/dist/
+/client/.vite/
+/client/coverage/
+/client/playwright-report/
+/client/test-results/
+/client/artifacts/
