@@ -15,4 +15,4 @@ Initialize schemas after cloning:
 git submodule update --init --recursive
 ```
 
-To run the React app, see [tools/README.md](tools/README.md). To build, test, or run the game API, see [server/README.md](server/README.md). Shared terminology and project guidance remain in [CONTEXT.md](CONTEXT.md), [AGENTS.md](AGENTS.md), and [`docs/`](docs/README.md).
+To run the React app, see [tools/README.md](tools/README.md). To build, test, or run the game API, see [server/README.md](server/README.md). Use [CONTEXT-MAP.md](CONTEXT-MAP.md) for project terminology and [AGENTS.md](AGENTS.md) for scope routing. Shared policies live in [`docs/`](docs/README.md); each project owns its documentation and agent team.

@@ -1,33 +1,11 @@
-# Domain Docs
+# Domain documentation
 
-How the engineering skills should consume this repo's domain documentation when exploring the codebase.
+Read [CONTEXT-MAP.md](../../CONTEXT-MAP.md) to select a project glossary before exploring or naming domain concepts:
 
-## Before exploring, read these
+- Server terms: [server/CONTEXT.md](../../server/CONTEXT.md).
+- Proto Studio terms: [tools/CONTEXT.md](../../tools/CONTEXT.md).
+- Cross-project decisions: [docs/adr/](../adr/).
 
-- **`CONTEXT.md`** at the repo root.
-- **`docs/adr/`** — read ADRs that touch the area you're about to work in.
+Use the selected glossary's terms in issues, designs, code, and tests. Preserve the distinction between game state and schema editing. Flag a contradiction with an existing ADR explicitly before changing the decision.
 
-If either path doesn't exist, **proceed silently**. Don't flag its absence; don't suggest creating it upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates it lazily when terms or decisions actually get resolved.
-
-## File structure
-
-```text
-/
-├── CONTEXT.md
-├── docs/adr/
-│   └── 0001-proto-schema-versions-by-commit.md
-├── server/src/
-└── tools/
-```
-
-## Use the glossary's vocabulary
-
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `CONTEXT.md`. Don't drift to synonyms the glossary explicitly avoids.
-
-If the concept you need isn't in the glossary yet, that's a signal — either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
-
-## Flag ADR conflicts
-
-If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
-
-> _Contradicts ADR-0007 (event-sourced orders) — but worth reopening because…_
+Keep project-specific domain explanations and decisions inside that project's documentation; shared decisions belong in root `docs/adr/`. Update the context map when adding a project context. Historical plans do not override current contracts or source.

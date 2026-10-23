@@ -8,7 +8,7 @@
 
 **Tech Stack:** Java 11, Akka HTTP, Protobuf, DynamoDB, existing Redis Sessions, JUnit 5; no new runtime dependencies.
 
-**Spec:** [Battle Pass design](../../BATTLE_PASS.md).
+**Spec:** [Battle Pass design](../BATTLE_PASS.md).
 
 ## Global Constraints
 

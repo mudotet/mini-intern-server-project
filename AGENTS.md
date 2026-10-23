@@ -1,28 +1,23 @@
-# Mini game server demo
+# Repository guidance
 
-Read CONTEXT.md for terminology and server/docs/ROADMAP.md for the current flow. Check the source and Git status in the current checkout before editing.
+This repository contains two independent projects. Read the matching instructions before working in either tree:
 
-## Working approach
+- `server/`: [server/AGENTS.md](server/AGENTS.md) — Java game API, Gradle, infrastructure, and server documentation.
+- `tools/`: [tools/AGENTS.md](tools/AGENTS.md) — React Proto Studio, Node API, UI skills, and tool documentation.
+- Work spanning both projects: read both guides and agree on the shared contract before editing.
 
-- Implement one flow at a time: handler → service → DAO → data → response.
-- Use Java 11, Akka HTTP, Protobuf, Redis, and DynamoDB already included in the build.
-- Services may call concrete DAOs; create interfaces/base classes/helpers when a real need arises.
-- Create models/services/DAOs when the implemented flow needs them; each file must have meaningful content and a clear role.
-- Keep changes within mini-intern-server-project. Preserve meaningful user changes; cleanup of empty scaffolding was requested in this session.
-- Demo scope: login, Player Init, static/daily shop, purchase, and EC2 + DynamoDB deployment.
-- Login/Player Init/shop/purchase flows are implemented; distinguish local tests from live AWS verification. Local verification passed 9 unit + 14 integration tests and the isolated Docker demo on 2026-10-02; live AWS EC2 remains unverified. The final ./gradlew clean compileJava test integrationTest build passed in 24 seconds.
-- For role-specific work, read the matching guide in server/docs/agents/ for coder.md, tester.md, or deployer.md; docs/agents/ for pm.md.
+## Shared working rules
 
-## Agent skills
+- Check Git status and the relevant source before editing. Preserve meaningful user changes and use the current checkout.
+- Keep project-specific source, build files, documentation, and agent guidance inside its project. Root files describe shared concerns only.
+- Use [CONTEXT-MAP.md](CONTEXT-MAP.md) to find terminology and [docs/README.md](docs/README.md) to find shared policies.
+- For team work, read [.codex/TEAM.md](.codex/TEAM.md), then the project's team guide. Assign one writer per file and report actual checks and remaining risks.
+- Keep changes simple and scoped to the requested behavior. Do not create empty scaffolding.
+- Be able to explain customer-facing behavior, design choices, malicious inputs, and failure modes at a system level. For explicitly requested PoCs and demos, prioritize speed and scope.
+- Keep secrets out of code, logs, and handoffs. Commit, push, provision, or deploy only with user authorization.
 
-### Issue tracker
+## Shared policies
 
-Issues are tracked in this repository's GitHub Issues. See docs/agents/issue-tracker.md.
-
-### Triage labels
-
-Triage uses the five canonical labels without aliases. See docs/agents/triage-labels.md.
-
-### Domain docs
-
-Domain documentation uses a single-context layout. See docs/agents/domain.md.
+- GitHub issues: [issue tracker](docs/agents/issue-tracker.md).
+- Triage labels: [triage labels](docs/agents/triage-labels.md).
+- Terminology and decisions: [domain documentation](docs/agents/domain.md).

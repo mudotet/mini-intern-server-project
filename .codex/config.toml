@@ -4,9 +4,9 @@ model_reasoning_effort = "medium"
 developer_instructions = """
 Read .codex/TEAM.md before working in this repository and follow its coordination protocol.
 The primary session is the main coordinator; do not spawn another coordinator.
-Use the project coder, tester, and reviewer agents for bounded delegated work.
+Select server_coder/server_tester/server_reviewer for server work or tools_coder/tools_tester/tools_reviewer for Proto Studio work when delegating.
 Pass the task, allowed paths, acceptance checks, and teammate IDs to each agent.
-Preserve AGENTS.md and follow existing docs/agents guides.
+Read root AGENTS.md and the selected project's AGENTS.md and .codex/TEAM.md. Keep project-specific work in its project.
 """
 
 [agents]
