@@ -1,6 +1,7 @@
 package com.game_server.general.app.handler.battlepass;
 
 import akka.http.javadsl.model.HttpRequest;
+import com.game.server.proto.BattlePassContract.BattlePassRequestProto;
 import com.game_server.general.app.base.ApiHandler;
 import com.game_server.general.app.base.BaseApiHandler;
 import com.game_server.general.app.handler.ApiCodes;
@@ -13,6 +14,7 @@ import com.google.protobuf.Message;
 public final class BattlePassHandler extends BaseApiHandler {
     private final BattlePassService battlePass;
     public BattlePassHandler(SessionService sessions, BattlePassService battlePass) { super(sessions); this.battlePass = battlePass; }
+    @Override protected Message.Builder jsonRequestBuilder() { return BattlePassRequestProto.newBuilder(); }
     @Override protected Message process(byte[] body, HttpRequest request, Identity identity) {
         return battlePass.view(identity.playerId);
     }

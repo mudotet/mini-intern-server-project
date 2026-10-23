@@ -56,3 +56,5 @@ bash scripts/battle-pass-demo.sh
 The local Compose app explicitly enables `DEMO_QUEST_GRANTS_ENABLED=true`. Direct Java startup defaults to false, and the EC2 template does not enable this simulated Quest reward API. It accepts trusted-system-style EXP input solely for the demo; real mission verification is outside scope.
 
 See [Battle Pass rules](docs/BATTLE_PASS.md) and [API contract](docs/API_CONTRACT.md). The shared template's stable origin is 2026-10-01 00:00 at UTC+07:00; consecutive passes last 30 days. Changing a published template's rewards or schedule requires a new template ID and deliberate rollout. Do not change definitions under the same ID during a running pass.
+
+The Battle Pass request/response source files are indexed in [src/main/proto/game/app/battle_pass/README.md](src/main/proto/game/app/battle_pass/README.md). They live inside the schema Git submodule, so inspect its own history to see individual `.proto` changes. Application Java types use regular classes; DynamoDB "items" or "records" in the documentation describe stored data, not Java `record` declarations.
