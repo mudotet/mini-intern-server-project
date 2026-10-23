@@ -1,0 +1,22 @@
+id: "demo_bp"
+schedule_origin: 1790787600
+duration_seconds: 2592000
+exp_per_node: 500
+premium_price_gems: 100
+heroes { hero_id: "hero_scout" rarity: BASIC }
+heroes { hero_id: "hero_knight" rarity: EPIC }
+heroes { hero_id: "hero_dragon" rarity: LEGENDARY }
+heroes { hero_id: "hero_phoenix" rarity: LEGENDARY }
+compensation { rarity: BASIC gems: 10 }
+compensation { rarity: EPIC gems: 50 }
+compensation { rarity: LEGENDARY gems: 100 }
+nodes { node_id: "node_1" premium: false reward { resource { resource_id: "gold" quantity: 100 } } }
+nodes { node_id: "node_2" premium: true reward { resource { resource_id: "gold" quantity: 500 } } }
+nodes { node_id: "node_3" premium: false reward { hero_id: "hero_scout" } }
+nodes { node_id: "node_4" premium: true reward { hero_id: "hero_knight" } }
+nodes { node_id: "node_5" premium: false reward { resource { resource_id: "xp" quantity: 50 } } }
+nodes { node_id: "node_6" premium: true reward { hero_id: "hero_dragon" } }
+nodes { node_id: "node_7" premium: false reward { resource { resource_id: "gold" quantity: 200 } } }
+nodes { node_id: "node_8" premium: true reward { resource { resource_id: "xp" quantity: 200 } } }
+nodes { node_id: "node_9" premium: false reward { resource { resource_id: "gem" quantity: 20 } } }
+nodes { node_id: "node_10" premium: true reward { hero_id: "hero_phoenix" } }

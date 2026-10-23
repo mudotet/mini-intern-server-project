@@ -2,6 +2,7 @@ package com.game_server.general.dao;
 
 import com.game.server.proto.ShopModel.ShopDailySnapshotProto;
 import com.game.server.proto.ShopPurchaseResponse.ShopPurchaseResponseProto;
+import com.game.server.proto.BattlePassModel.PlayerBattlePassStateProto;
 import com.game_server.general.service.GameException;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.*;
@@ -78,6 +79,69 @@ public final class GameDao {
         } catch (InvalidProtocolBufferException malformed) { throw new IllegalStateException("Invalid persisted daily snapshot", malformed); }
     }
 
+    public BattlePassState battlePass(String playerId) {
+        Map<String, AttributeValue> data = get("battlepass:" + playerId);
+        if (data.isEmpty()) return new BattlePassState(-1, PlayerBattlePassStateProto.getDefaultInstance());
+        try {
+            return new BattlePassState(Long.parseLong(data.get("version").n()),
+                    PlayerBattlePassStateProto.parseFrom(data.get("state").b().asByteArray()));
+        } catch (InvalidProtocolBufferException malformed) { throw new IllegalStateException("Invalid Battle Pass state", malformed); }
+    }
+
+    public BattlePassReceipt battlePassReceipt(String playerId, String requestId) {
+        return battlePassReceipt(get("battlepass-op:" + playerId + ":" + requestId));
+    }
+
+    public BattlePassReceipt questGrant(String playerId, String grantId) {
+        return battlePassReceipt(get("battlepass-grant:" + playerId + ":" + grantId));
+    }
+
+    private static BattlePassReceipt battlePassReceipt(Map<String, AttributeValue> data) {
+        if (data.isEmpty()) return null;
+        return new BattlePassReceipt(data.get("operation").s(), data.get("input").b().asByteArray(), data.get("response").b().asByteArray());
+    }
+
+    public boolean linkBattlePassReceipt(String playerId, String requestId, BattlePassReceipt receipt) {
+        try {
+            db.putItem(PutItemRequest.builder().tableName(table)
+                    .item(battlePassReceiptItem("battlepass-op:" + playerId + ":" + requestId, receipt))
+                    .conditionExpression("attribute_not_exists(id)").build());
+            return true;
+        } catch (ConditionalCheckFailedException conflict) { return false; }
+    }
+
+    public boolean commitBattlePass(Player player, BattlePassState state, String requestId, BattlePassReceipt receipt, String grantId) {
+        Map<String, AttributeValue> data = new HashMap<>();
+        data.put("id", s("battlepass:" + player.playerId));
+        data.put("version", n(state.version + 1));
+        data.put("state", AttributeValue.builder().b(SdkBytes.fromByteArray(state.data.toByteArray())).build());
+        Put.Builder update = Put.builder().tableName(table).item(data);
+        if (state.version < 0) update.conditionExpression("attribute_not_exists(id)");
+        else update.conditionExpression("#v = :v").expressionAttributeNames(Map.of("#v", "version"))
+                .expressionAttributeValues(Map.of(":v", n(state.version)));
+        Put playerUpdate = Put.builder().tableName(table).item(item(player, player.version + 1))
+                .conditionExpression("#v = :v").expressionAttributeNames(Map.of("#v", "version"))
+                .expressionAttributeValues(Map.of(":v", n(player.version))).build();
+        List<TransactWriteItem> writes = new ArrayList<>();
+        writes.add(TransactWriteItem.builder().put(playerUpdate).build());
+        writes.add(TransactWriteItem.builder().put(update.build()).build());
+        writes.add(absent(battlePassReceiptItem("battlepass-op:" + player.playerId + ":" + requestId, receipt)));
+        if (grantId != null) writes.add(absent(battlePassReceiptItem("battlepass-grant:" + player.playerId + ":" + grantId, receipt)));
+        try {
+            db.transactWriteItems(TransactWriteItemsRequest.builder().transactItems(writes).build());
+            return true;
+        } catch (TransactionCanceledException conflict) {
+            if (conditional(conflict)) return false;
+            throw conflict;
+        }
+    }
+
+    private static Map<String, AttributeValue> battlePassReceiptItem(String id, BattlePassReceipt receipt) {
+        return Map.of("id", s(id), "operation", s(receipt.operation),
+                "input", AttributeValue.builder().b(SdkBytes.fromByteArray(receipt.input)).build(),
+                "response", AttributeValue.builder().b(SdkBytes.fromByteArray(receipt.response)).build());
+    }
+
     public boolean save(Player player) {
         try {
             db.putItem(PutItemRequest.builder().tableName(table).item(item(player, player.version + 1))
@@ -135,6 +199,20 @@ public final class GameDao {
     }
     private static AttributeValue s(String value) { return AttributeValue.builder().s(value).build(); }
     private static AttributeValue n(long value) { return AttributeValue.builder().n(Long.toString(value)).build(); }
+
+    public static final class BattlePassReceipt {
+        public final String operation;
+        public final byte[] input, response;
+        public BattlePassReceipt(String operation, byte[] input, byte[] response) {
+            this.operation = operation; this.input = input.clone(); this.response = response.clone();
+        }
+    }
+
+    public static final class BattlePassState {
+        public final long version;
+        public final PlayerBattlePassStateProto data;
+        public BattlePassState(long version, PlayerBattlePassStateProto data) { this.version = version; this.data = data; }
+    }
 
     public static final class Identity {
         public final String accountId, playerId, deviceId, sessionId;

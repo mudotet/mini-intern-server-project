@@ -1,9 +1,0 @@
-**
-!server/
-!server/build/
-!server/build/install/
-!server/build/install/mini-game-server/
-!server/build/install/mini-game-server/**
-!docker/
-!docker/application/
-!docker/application/Dockerfile

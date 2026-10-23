@@ -53,6 +53,39 @@ A Player's exchange of Gold or Gems for a ShopPackage's rewards under its applic
 **RequestId**:
 A client-assigned identity for one retryable operation. Reuse is valid only when the operation input is identical.
 
+### Battle Pass
+
+**BattlePass**:
+A time-limited reward progression shared by all Players. Each BattlePass has start and end dates and contains many ordered nodes with a mix of Free and Premium access requirements.
+
+**BattlePassEXP**:
+Experience that advances a Player through a BattlePass, separate from the Player's XP Resource.
+_Avoid_: XP
+
+**BattlePassNode**:
+A BattlePass milestone with exactly one reward and a Free or Premium access requirement. Reaching each node requires a full 500 BattlePassEXP toward that node.
+
+**BattlePassProgress**:
+A Player's advancement through a BattlePass. Each node requires 500 BattlePassEXP, with excess EXP carried into subsequent nodes.
+
+**PremiumAccess**:
+A Player's permission to claim Premium node rewards in a BattlePass. One purchase unlocks access to all its Premium nodes.
+
+**Hero**:
+A predefined character a Player can own and receive as a BattlePass reward.
+
+**HeroRarity**:
+A Hero's quality category, such as Basic, Epic, or Legendary. Premium BattlePass rewards can include Heroes of higher rarity.
+
+**HeroCompensation**:
+Gems granted instead of a Hero the Player already owns. The amount depends on HeroRarity.
+
+**QuestRewardClaim**:
+A Player's collection of a completed Quest's reward. The BattlePass feature uses BattlePassEXP as this reward.
+
+**QuestRewardGrant**:
+One award of BattlePassEXP from a Quest reward claim to a Player. Distinct completions of the same Quest can produce distinct grants.
+
 ### Proto Tool
 
 **ProtoSchema**:
