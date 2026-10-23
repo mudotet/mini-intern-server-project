@@ -7,7 +7,8 @@ import {
   exportZip,
   validateFiles,
 } from "../server/schema.mjs";
-import { githubWorkspace, localWorkspace } from "../server/workspace.mjs";
+import { githubWorkspace } from "../server/workspace.mjs";
+import { localWorkspace } from "./fixtures/local-workspace.mjs";
 import { createApp } from "../server/index.mjs";
 const source = `syntax = "proto3";
 package demo;
@@ -174,7 +175,7 @@ test("ZIP preserves exact content and relative paths", async () => {
   assert.deepEqual(Object.keys(zip), ["game/player.proto"]);
   assert.equal(strFromU8(zip["game/player.proto"]), source);
 });
-test("local workspace uses actual migrated schema and no invented SHA", async () => {
+test("test fixture uses actual migrated schema and no invented SHA", async () => {
   const result = await localWorkspace();
   assert.equal(result.revision.sha, null);
   assert.equal(result.analysis.valid, true);
@@ -197,7 +198,7 @@ test("GitHub rejects invalid commit, empty schema, truncation and rate limits", 
       sha,
       async () => new Response("{}", { status: 403 }),
     ),
-    /giới hạn/,
+    /rate limit/,
   );
 });
 test("GitHub uses immutable tree and blob SHA without writes", async () => {

@@ -1,50 +1,13 @@
-import { readdir, readFile } from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { ApiError, analyze, validateFiles } from "./schema.mjs";
-const root = fileURLToPath(new URL("../../", import.meta.url));
-export async function localWorkspace() {
-  let source = path.join(root, "server/src/main/proto");
-  try {
-    await readdir(source);
-  } catch (error) {
-    if (error.code !== "ENOENT") throw error;
-    source = path.join(root, "src/main/proto");
-  }
-  const files = [];
-  async function walk(dir, relative = "") {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      if (entry.isSymbolicLink())
-        throw new ApiError("Không chấp nhận symlink trong schema.", 422);
-      const name = path.posix.join(relative, entry.name),
-        absolute = path.join(dir, entry.name);
-      if (entry.isDirectory()) await walk(absolute, name);
-      else if (entry.isFile() && entry.name.endsWith(".proto"))
-        files.push({ path: name, content: await readFile(absolute, "utf8") });
-    }
-  }
-  await walk(source);
-  files.sort((a, b) => a.path.localeCompare(b.path));
-  return {
-    files,
-    revision: {
-      source: "local",
-      repository: "mini-intern-server-project",
-      sha: null,
-      label: "Demo cục bộ",
-    },
-    analysis: await analyze(files),
-  };
-}
 export async function githubWorkspace(repository, commit, fetcher = fetch) {
   if (
     typeof repository !== "string" ||
     !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository) ||
     repository.split("/").some((x) => x === "." || x === "..")
   )
-    throw new ApiError("Repository phải có dạng owner/repo.");
+    throw new ApiError("Repository must use the owner/repo format.");
   if (typeof commit !== "string" || !/^[a-fA-F0-9]{40}$/.test(commit))
-    throw new ApiError("Cần commit SHA đầy đủ 40 ký tự.");
+    throw new ApiError("Enter the full 40-character commit SHA.");
   async function get(endpoint) {
     let response;
     try {
@@ -60,39 +23,39 @@ export async function githubWorkspace(repository, commit, fetcher = fetch) {
         },
       );
     } catch {
-      throw new ApiError("Không thể kết nối GitHub. Vui lòng thử lại.", 502);
+      throw new ApiError("Cannot connect to GitHub. Please try again.", 502);
     }
     if (!response.ok) {
       const message =
         response.status === 403 || response.status === 429
-          ? "GitHub giới hạn lượt truy cập. Vui lòng thử lại sau."
+          ? "GitHub rate limit reached. Please try again later."
           : response.status === 404 || response.status === 409
-            ? "Repository trống, không công khai hoặc commit không tồn tại."
-            : `GitHub trả về lỗi ${response.status}.`;
+            ? "The repository is empty or private, or the commit does not exist."
+            : `GitHub returned status ${response.status}.`;
       throw new ApiError(message, 502);
     }
     const body = await response.text();
     if (Buffer.byteLength(body) > 12_000_000)
-      throw new ApiError("Dữ liệu GitHub quá lớn.", 413);
+      throw new ApiError("The GitHub response is too large.", 413);
     try {
       return JSON.parse(body);
     } catch {
-      throw new ApiError("GitHub trả về dữ liệu không hợp lệ.", 502);
+      throw new ApiError("GitHub returned invalid data.", 502);
     }
   }
   const tree = await get(`git/trees/${commit}?recursive=1`);
   if (tree.truncated)
     throw new ApiError(
-      "Cây GitHub bị cắt ngắn, không thể tải đầy đủ schema.",
+      "The GitHub tree is truncated. The full schema set could not be loaded.",
       422,
     );
   if (!Array.isArray(tree.tree))
-    throw new ApiError("Không đọc được cây repository.", 502);
+    throw new ApiError("Could not read the repository tree.", 502);
   const entries = tree.tree.filter((e) => e.path?.endsWith(".proto"));
   if (!entries.length)
-    throw new ApiError("Không tìm thấy tệp .proto tại commit này.");
+    throw new ApiError("No .proto files were found at this commit.");
   if (entries.length > 500)
-    throw new ApiError("Repository có quá nhiều tệp .proto.", 413);
+    throw new ApiError("The repository contains too many .proto files.", 413);
   if (
     entries.some(
       (e) =>
@@ -102,11 +65,11 @@ export async function githubWorkspace(repository, commit, fetcher = fetch) {
     )
   )
     throw new ApiError(
-      "Không chấp nhận schema symlink hoặc blob không hợp lệ.",
+      "Schema symlinks and invalid blobs are not supported.",
     );
   validateFiles(entries.map((e) => ({ path: e.path, content: "" })));
   if (entries.reduce((n, e) => n + (e.size || 0), 0) > 5_000_000)
-    throw new ApiError("Tổng dung lượng schema vượt quá 5 MB.", 413);
+    throw new ApiError("Total schema size exceeds 5 MB.", 413);
   const files = [];
   // Bound parallel requests so a large schema tree does not flood GitHub.
   for (let i = 0; i < entries.length; i += 6) {
@@ -115,7 +78,7 @@ export async function githubWorkspace(repository, commit, fetcher = fetch) {
         entries.slice(i, i + 6).map(async (entry) => {
           const blob = await get(`git/blobs/${entry.sha}`);
           if (blob.encoding !== "base64" || typeof blob.content !== "string")
-            throw new ApiError("Không đọc được nội dung schema GitHub.", 502);
+            throw new ApiError("Could not read the GitHub schema content.", 502);
           return {
             path: entry.path,
             content: Buffer.from(blob.content, "base64").toString("utf8"),

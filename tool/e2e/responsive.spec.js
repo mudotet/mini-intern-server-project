@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, schemaFixture } from './fixtures.js';
 import { mkdir } from 'node:fs/promises';
 
 const sizes = [
@@ -10,18 +10,19 @@ for (const [width, height] of sizes) {
     await page.setViewportSize({ width, height });
     await mkdir('artifacts/responsive', { recursive: true });
     await page.goto('/');
-    await expect(page.getByText('Schema hợp lệ', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Schema editor', exact: true }).click();
+    await expect(page.getByText('Schemas valid', { exact: true })).toBeVisible();
     const fitsPage = async () => {
       const bounds = await page.evaluate(() => ({ width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight }));
       expect(bounds.width).toBeLessThanOrEqual(width);
       expect(bounds.height).toBeLessThanOrEqual(height);
     };
     await fitsPage();
-    const exportButton = page.getByRole('button', { name: 'Xuất ZIP', exact: true });
+    const exportButton = page.getByRole('button', { name: 'Export ZIP', exact: true });
     await expect(exportButton).toBeInViewport();
 
     // A field's edit action must be reachable without horizontal table scrolling.
-    const edit = page.getByRole('button', { name: 'Chỉnh sửa id', exact: true });
+    const edit = page.getByRole('button', { name: 'Edit id', exact: true });
     if (width <= 1024) {
       expect(await page.locator('.table-scroll').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
     }
@@ -32,28 +33,29 @@ for (const [width, height] of sizes) {
     if (width <= 1024) {
       expect(bounds.width).toBeGreaterThanOrEqual(44);
       expect(bounds.height).toBeGreaterThanOrEqual(44);
-      await page.getByRole('button', { name: 'Mở danh sách file' }).click();
-      await expect(page.getByRole('dialog', { name: 'Danh sách file schema' })).toBeVisible();
+      await page.getByRole('button', { name: 'Open file browser' }).click();
+      await expect(page.getByRole('dialog', { name: 'Schema files' })).toBeVisible();
       await page.keyboard.press('Escape');
     }
     await edit.click();
-    const form = page.getByRole('dialog', { name: 'Chỉnh sửa thuộc tính' });
-    await expect(form.getByLabel('Tên thuộc tính')).toBeFocused();
-    await form.getByRole('button', { name: 'Lưu thay đổi', exact: true }).scrollIntoViewIfNeeded();
-    await expect(form.getByRole('button', { name: 'Lưu thay đổi', exact: true })).toBeInViewport();
+    const form = page.getByRole('dialog', { name: 'Edit field' });
+    await expect(form.getByLabel('Field name')).toBeFocused();
+    await form.getByRole('button', { name: 'Save changes', exact: true }).scrollIntoViewIfNeeded();
+    await expect(form.getByRole('button', { name: 'Save changes', exact: true })).toBeInViewport();
     await fitsPage();
     if (width === 320 || height === 390) await page.screenshot({ path: `artifacts/responsive/${width}x${height}-form.png` });
     await page.keyboard.press('Escape');
     await expect(form).not.toBeVisible();
 
-    for (const name of ['Đối chiếu', 'Mã proto', 'Chỉnh sửa']) {
+    for (const name of ['Compare', 'Proto source', 'Edit']) {
       await page.getByRole('tab', { name, exact: true }).click();
       await fitsPage();
+      if (name === 'Compare') await page.keyboard.press('Escape');
     }
     await exportButton.click();
-    const dialog = page.getByRole('dialog', { name: 'Xuất workspace' });
-    await dialog.getByText('Xem 14 file sẽ xuất', { exact: true }).click();
-    const download = dialog.getByRole('button', { name: 'Tải ZIP', exact: true });
+    const dialog = page.getByRole('dialog', { name: 'Export workspace' });
+    await dialog.getByText('View 14 files to export', { exact: true }).click();
+    const download = dialog.getByRole('button', { name: 'Download ZIP', exact: true });
     await download.scrollIntoViewIfNeeded();
     await expect(download).toBeInViewport();
     await fitsPage();

@@ -25,7 +25,7 @@ export class ApiError extends Error {
 }
 export function validateFiles(files) {
   if (!Array.isArray(files) || !files.length || files.length > 500)
-    throw new ApiError("Cần từ 1 đến 500 tệp .proto.");
+    throw new ApiError("Provide between 1 and 500 .proto files.");
   const seen = new Set();
   let bytes = 0;
   for (const file of files) {
@@ -39,12 +39,12 @@ export function validateFiles(files) {
       file.path.startsWith("-") ||
       seen.has(file.path)
     )
-      throw new ApiError("Đường dẫn .proto không hợp lệ hoặc bị trùng.");
+      throw new ApiError("A .proto path is invalid or duplicated.");
     seen.add(file.path);
     bytes += Buffer.byteLength(file.content);
   }
   if (bytes > 5_000_000)
-    throw new ApiError("Tổng dung lượng schema vượt quá 5 MB.", 413);
+    throw new ApiError("Total schema size exceeds 5 MB.", 413);
   return files;
 }
 let compiler;
@@ -69,7 +69,7 @@ async function findProtoc() {
     } catch {}
   }
   throw new ApiError(
-    "Không tìm thấy protoc. Cài protoc hoặc đặt biến PROTOC.",
+    "protoc was not found. Install protoc or set PROTOC.",
     503,
   );
 }
@@ -160,7 +160,7 @@ function describe(descriptors, files) {
       }
       for (const m of f.messageType || []) walk(m, f.package || "");
       for (const e of f.enumType || []) enumWalk(e, f.package || "");
-      return { path: f.name, package: f.package || "", messages, enums };
+      return { path: f.name, package: f.package || "", imports: f.dependency || [], messages, enums };
     });
 }
 export async function compile(files) {
@@ -206,7 +206,7 @@ export async function compile(files) {
       );
     } catch (error) {
       if (error.code === "ENOENT" || error.killed)
-        throw new ApiError("Trình biên dịch protoc không phản hồi.", 503);
+        throw new ApiError("The protoc compiler did not respond.", 503);
       return {
         analysis: {
           valid: false,
@@ -237,12 +237,12 @@ export async function analyze(files) {
 }
 function identifier(value) {
   if (typeof value !== "string" || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(value))
-    throw new ApiError("Tên phải là định danh Protobuf hợp lệ.");
+    throw new ApiError("Enter a valid Protobuf identifier.");
   return value;
 }
 function fieldText(field, number) {
   if (!field || typeof field !== "object")
-    throw new ApiError("Thiếu thông tin trường.");
+    throw new ApiError("Field information is missing.");
   const name = identifier(field.name);
   const validType = (t) =>
     typeof t === "string" && /^\.?[A-Za-z_][A-Za-z0-9_.]*$/.test(t);
@@ -252,17 +252,17 @@ function fieldText(field, number) {
     number > 536870911 ||
     (number >= 19000 && number <= 19999)
   )
-    throw new ApiError("Số trường không hợp lệ.");
+    throw new ApiError("Invalid field number.");
   if (field.type === "map") {
     if (!validType(field.keyType) || !validType(field.valueType))
-      throw new ApiError("Kiểu map không hợp lệ.");
+      throw new ApiError("Invalid map type.");
     return `map<${field.keyType}, ${field.valueType}> ${name} = ${number}`;
   }
   if (
     !validType(field.type) ||
     !["single", "optional", "repeated"].includes(field.rule || "single")
   )
-    throw new ApiError("Kiểu trường không hợp lệ.");
+    throw new ApiError("Invalid field type.");
   return `${field.rule && field.rule !== "single" ? field.rule + " " : ""}${field.type} ${name} = ${number}`;
 }
 function offset(text, line, column) {
@@ -277,7 +277,7 @@ function offset(text, line, column) {
   );
 }
 function span(text, location) {
-  if (!location?.span) throw new ApiError("Không tìm thấy vị trí nguồn.");
+  if (!location?.span) throw new ApiError("Source location not found.");
   const s = location.span;
   return [
     offset(text, s[0], s[1]),
@@ -296,7 +296,7 @@ function tokenEdits(text, start, end, replacement) {
     );
   const oldTokens = tokens(text.slice(start, end));
   const newTokens = tokens(replacement);
-  if (!oldTokens.length) throw new ApiError("Không tìm thấy token khai báo.");
+  if (!oldTokens.length) throw new ApiError("Declaration token not found.");
   return oldTokens.map((token, index) => ({
     start: start + token.index,
     end: start + token.index + token[0].length,
@@ -340,7 +340,7 @@ export async function mutate(files, filePath, operation) {
   const compiled = await compile(files);
   if (!compiled.analysis.valid)
     throw new ApiError(
-      "Hãy sửa lỗi schema trước khi chỉnh sửa.",
+      "Fix the schema errors before editing.",
       422,
       compiled.analysis.diagnostics,
     );
@@ -352,7 +352,7 @@ export async function mutate(files, filePath, operation) {
     !operation ||
     typeof operation.kind !== "string"
   )
-    throw new ApiError("Tệp hoặc thao tác không hợp lệ.");
+    throw new ApiError("Invalid file or operation.");
   const all = nodes(descriptor),
     target = all.find((n) => n.fullName === operation.target);
   const location = (p) =>
@@ -379,7 +379,7 @@ export async function mutate(files, filePath, operation) {
     }
     const [, b] = span(text, location(parent.p));
     const at = text.lastIndexOf("}", b - 1);
-    if (at < 0) throw new ApiError("Không tìm thấy phạm vi khai báo.");
+    if (at < 0) throw new ApiError("Declaration range not found.");
     text =
       text.slice(0, at) +
       `\n  ${value.replace(/\n/g, "\n  ")}\n` +
@@ -393,7 +393,7 @@ export async function mutate(files, filePath, operation) {
           )
         : null;
     if (operation.parent && !parent)
-      throw new ApiError("Không tìm thấy message cha.");
+      throw new ApiError("Parent message not found.");
     insert(
       parent,
       operation.kind === "addMessage"
@@ -404,7 +404,7 @@ export async function mutate(files, filePath, operation) {
     ["addField", "updateField", "deleteField"].includes(operation.kind)
   ) {
     if (target?.kind !== "message")
-      throw new ApiError("Không tìm thấy message.");
+      throw new ApiError("Message not found.");
     const fields = target.node.field || [],
       index = fields.findIndex((f) => f.number === operation.fieldNumber);
     if (operation.kind === "addField") {
@@ -423,7 +423,7 @@ export async function mutate(files, filePath, operation) {
       }
       insert(target, fieldText(operation.field, number) + ";");
     } else {
-      if (index < 0) throw new ApiError("Không tìm thấy trường.");
+      if (index < 0) throw new ApiError("Field not found.");
       const p = [...target.p, 2, index];
       if (operation.kind === "deleteField") replace(p, "");
       else {
@@ -455,7 +455,7 @@ export async function mutate(files, filePath, operation) {
       operation.kind,
     )
   ) {
-    if (target?.kind !== "enum") throw new ApiError("Không tìm thấy enum.");
+    if (target?.kind !== "enum") throw new ApiError("Enum not found.");
     const value = operation.value;
     if (
       operation.kind !== "deleteEnumValue" &&
@@ -464,7 +464,7 @@ export async function mutate(files, filePath, operation) {
         value.number < -2147483648 ||
         value.number > 2147483647)
     )
-      throw new ApiError("Giá trị enum không hợp lệ.");
+      throw new ApiError("Invalid enum value.");
     const rendered =
       operation.kind === "deleteEnumValue"
         ? ""
@@ -474,7 +474,7 @@ export async function mutate(files, filePath, operation) {
       const index = (target.node.value || []).findIndex(
         (v) => v.name === operation.oldName,
       );
-      if (index < 0) throw new ApiError("Không tìm thấy giá trị enum.");
+      if (index < 0) throw new ApiError("Enum value not found.");
       const p = [...target.p, 2, index];
       if (operation.kind === "deleteEnumValue") replace(p, "");
       else {
@@ -484,20 +484,20 @@ export async function mutate(files, filePath, operation) {
         ]);
       }
     }
-  } else throw new ApiError("Thao tác không được hỗ trợ.");
+  } else throw new ApiError("Unsupported operation.");
   const updated = files.map((f) =>
       f.path === filePath ? { ...f, content: text } : f,
     ),
     analysis = await analyze(updated);
   if (!analysis.valid)
-    throw new ApiError("Thay đổi không hợp lệ.", 422, analysis.diagnostics);
+    throw new ApiError("The edit is invalid.", 422, analysis.diagnostics);
   return { files: updated, analysis };
 }
 export async function exportZip(files) {
   const analysis = await analyze(files);
   if (!analysis.valid)
     throw new ApiError(
-      "Schema không hợp lệ, chưa thể xuất ZIP.",
+      "Fix the schema errors before exporting a ZIP.",
       422,
       analysis.diagnostics,
     );

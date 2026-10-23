@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, schemaFixture } from './fixtures.js';
 import { mkdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { unzipSync, strFromU8 } from 'fflate';
@@ -13,28 +13,28 @@ async function saveScreenshot(page, name) {
 
 async function saveForm(page) {
   const dialog = page.getByRole('dialog');
-  await dialog.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(dialog).not.toBeVisible();
 }
 
 async function addField(page, name, { type = 'string', rule = 'single', valueType = 'string' } = {}) {
-  await page.getByRole('button', { name: 'Thêm thuộc tính', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Thêm thuộc tính' });
-  await dialog.getByLabel('Tên thuộc tính').fill(name);
-  await dialog.getByLabel('Kiểu dữ liệu').selectOption(type);
+  await page.getByRole('button', { name: 'Add field', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Add field' });
+  await dialog.getByLabel('Field name').fill(name);
+  await dialog.getByLabel('Data type').selectOption(type);
   if (type === 'map') {
-    await dialog.getByLabel('Kiểu khóa').selectOption('string');
-    await dialog.getByLabel('Kiểu giá trị').selectOption(valueType);
+    await dialog.getByLabel('Key type').selectOption('string');
+    await dialog.getByLabel('Value type').selectOption(valueType);
   } else {
-    await dialog.getByLabel('Dạng').selectOption(rule);
+    await dialog.getByLabel('Field shape').selectOption(rule);
   }
   await saveForm(page);
 }
 
 async function addDeclaration(page, kind, name) {
   await page.getByRole('button', { name: kind === 'message' ? 'Message' : 'Enum', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: `Thêm ${kind}` });
-  await dialog.getByLabel(`Tên ${kind}`).fill(name);
+  const dialog = page.getByRole('dialog', { name: `Add ${kind}` });
+  await dialog.getByLabel(`${kind === 'message' ? 'Message name' : 'Enum name'}`).fill(name);
   await saveForm(page);
 }
 
@@ -43,34 +43,33 @@ async function addDeclaration(page, kind, name) {
 
 test('real schemas remain intact through editing, recovery, failed import and ZIP export', async ({ page, request }) => {
   await page.setViewportSize({ width: 1440, height: 960 });
-  const baselineResponse = await request.get('/api/workspace');
-  expect(baselineResponse.ok()).toBeTruthy();
-  const baseline = await baselineResponse.json();
-  expect(baseline.revision.source).toBe('local');
+  const baseline = await schemaFixture();
+  expect(baseline.revision.source).toBe('github');
   expect(baseline.files.length).toBeGreaterThan(5);
   page.on('dialog', dialog => dialog.accept());
   await page.goto('/');
-  await expect(page.getByText('Schema hợp lệ', { exact: true })).toBeVisible();
-  await expect(page.getByText('Local demo', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Schema editor', exact: true }).click();
+  await expect(page.getByText('Schemas valid', { exact: true })).toBeVisible();
+  await expect(page.getByRole('banner').getByText('GitHub', { exact: true })).toBeVisible();
 
-  const search = page.getByRole('textbox', { name: 'Tìm schema' });
+  const search = page.getByRole('textbox', { name: 'Search schemas' });
   await search.fill('missing-schema-no-results');
-  await expect(page.getByText('Không tìm thấy schema', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Xóa tìm kiếm' }).first().click();
+  await expect(page.getByText('No schemas found', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Clear search' }).first().click();
   await search.fill('game/model/shop.proto');
-  const files = page.getByRole('navigation', { name: 'Danh sách schema' });
-  await files.getByRole('button', { name: `Mở ${schemaPath}`, exact: true }).click();
+  const files = page.getByRole('navigation', { name: 'Schema files' });
+  await files.getByRole('button', { name: `Open ${schemaPath}`, exact: true }).click();
   await expect(page.getByRole('heading', { name: 'ShopDailySnapshotProto', exact: true })).toBeVisible();
 
   await addField(page, 'review_note');
   const added = page.getByRole('row').filter({ has: page.getByText('review_note', { exact: true }) });
   await expect(added).toContainText('5'); // Existing 1-3 plus reserved 4 must allocate 5.
-  await page.getByRole('button', { name: 'Chỉnh sửa review_note', exact: true }).click();
-  await page.getByRole('dialog').getByLabel('Tên thuộc tính').fill('review_title');
+  await page.getByRole('button', { name: 'Edit review_note', exact: true }).click();
+  await page.getByRole('dialog').getByLabel('Field name').fill('review_title');
   await saveForm(page);
-  await expect(page.getByRole('button', { name: 'Chỉnh sửa review_title', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Edit review_title', exact: true })).toBeVisible();
   await addField(page, 'review_tags', { rule: 'repeated' });
-  await expect(page.getByRole('row').filter({ has: page.getByText('review_tags', { exact: true }) })).toContainText('Danh sách');
+  await expect(page.getByRole('row').filter({ has: page.getByText('review_tags', { exact: true }) })).toContainText('List');
   await addField(page, 'review_counts', { type: 'map', valueType: 'int32' });
   await expect(page.getByRole('row').filter({ has: page.getByText('review_counts', { exact: true }) })).toContainText('map<string, int32>');
 
@@ -78,49 +77,52 @@ test('real schemas remain intact through editing, recovery, failed import and ZI
   await expect(page.getByRole('heading', { name: 'ReviewMetadata', exact: true })).toBeVisible();
   await addField(page, 'author');
   await addDeclaration(page, 'enum', 'ReviewState');
-  await page.getByRole('button', { name: 'Thêm giá trị', exact: true }).click();
-  await page.getByRole('dialog').getByLabel('Tên giá trị').fill('REVIEW_READY');
-  await page.getByRole('dialog').getByLabel('Mã số', { exact: false }).fill('1');
+  await page.getByRole('button', { name: 'Add value', exact: true }).click();
+  await page.getByRole('dialog').getByLabel('Value name').fill('REVIEW_READY');
+  await page.getByRole('dialog').getByRole('spinbutton').fill('1');
   await saveForm(page);
   await expect(page.getByText('REVIEW_READY', { exact: true })).toBeVisible();
 
-  await page.getByRole('tab', { name: 'Đối chiếu' }).click();
-  const diff = page.getByRole('region', { name: 'Đối chiếu bản gốc và bản nháp' });
+  await page.getByRole('tab', { name: 'Compare' }).click();
+  const diff = page.getByRole('region', { name: 'Compare original and draft' });
   await expect(diff).toBeVisible();
-  await expect(diff.getByText('BẢN GỐC', { exact: true })).toBeVisible();
-  await expect(diff.getByText('BẢN NHÁP', { exact: true })).toBeVisible();
+  await expect(diff.getByText('ORIGINAL', { exact: true })).toBeVisible();
+  await expect(diff.getByText('DRAFT', { exact: true })).toBeVisible();
   await expect(diff).toContainText('review_title');
-  await page.getByRole('tab', { name: 'Mã proto', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await page.getByRole('tab', { name: 'Proto source', exact: true }).click();
   await expect(page.getByRole('tabpanel')).toContainText('reserved "schema_version"');
   await expect(page.getByRole('tabpanel')).toContainText('option csharp_namespace = "Game.Server.Proto"');
   await page.reload();
+  await page.getByRole('button', { name: 'Schema editor', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'ReviewState', exact: true })).toBeVisible();
   await expect(page.getByText('REVIEW_READY', { exact: true })).toBeVisible();
 
   const persisted = await page.evaluate(() => JSON.parse(localStorage.getItem('proto-studio-workspace-v1')));
   expect(persisted.files.find(file => file.path === schemaPath).content).toContain('review_title');
-  await page.route('**/api/github', route => route.fulfill({ status: 422, contentType: 'application/json', body: JSON.stringify({ error: 'Repository chưa có schema tại commit này.' }) }));
-  await page.getByRole('button', { name: 'Mở GitHub' }).click();
-  const importDialog = page.getByRole('dialog', { name: 'Mở schema từ GitHub' });
-  await importDialog.getByLabel('Commit SHA đầy đủ').fill('a'.repeat(40));
-  await importDialog.getByRole('button', { name: 'Mở repository' }).click();
-  await expect(importDialog.getByRole('alert')).toContainText('Repository chưa có schema');
+  await page.route('**/api/github', route => route.fulfill({ status: 422, contentType: 'application/json', body: JSON.stringify({ error: 'No schemas were found at this commit.' }) }));
+  await page.getByRole('button', { name: 'Source settings' }).click();
+  const importDialog = page.getByRole('dialog', { name: 'Source settings' });
+  await importDialog.getByLabel('Repository', { exact: true }).fill('owner/repo');
+  await importDialog.getByLabel('Full commit SHA').fill('a'.repeat(40));
+  await importDialog.getByRole('button', { name: 'Save & load' }).click();
+  await expect(importDialog.getByRole('alert')).toContainText('No schemas were found');
   await page.keyboard.press('Escape');
   await expect(importDialog).not.toBeVisible();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('proto-studio-workspace-v1')).files)).toEqual(persisted.files);
 
   const analyzeResponse = page.waitForResponse(response => response.url().endsWith('/api/analyze') && response.request().method() === 'POST');
-  await page.getByRole('button', { name: 'Kiểm tra', exact: true }).click();
+  await page.getByRole('button', { name: 'Validate', exact: true }).click();
   expect((await (await analyzeResponse).json()).valid).toBe(true);
-  await expect(page.getByText('Schema hợp lệ', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Xuất ZIP', exact: true }).click();
-  const exportDialog = page.getByRole('dialog', { name: 'Xuất workspace' });
-  await expect(exportDialog).toContainText(`${baseline.files.length} file`);
-  await expect(exportDialog).toContainText('1 file');
-  await expect(exportDialog).toContainText('cấu trúc thư mục');
+  await expect(page.getByText('Schemas valid', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Export ZIP', exact: true }).click();
+  const exportDialog = page.getByRole('dialog', { name: 'Export workspace' });
+  await expect(exportDialog).toContainText(`${baseline.files.length} .proto files`);
+  await expect(exportDialog).toContainText('1 changed file');
+  await expect(exportDialog).toContainText('Folder structure');
   await saveScreenshot(page, 'export-dialog');
   const downloadEvent = page.waitForEvent('download');
-  await exportDialog.getByRole('button', { name: 'Tải ZIP', exact: true }).click();
+  await exportDialog.getByRole('button', { name: 'Download ZIP', exact: true }).click();
   const download = await downloadEvent;
   expect(download.suggestedFilename()).toBe('proto-studio-schemas.zip');
   const zip = unzipSync(await readFile(await download.path()));
@@ -138,37 +140,38 @@ test('real schemas remain intact through editing, recovery, failed import and ZI
       expect(actual).toContain('REVIEW_READY = 1;');
     }
   }
-  await page.getByRole('tab', { name: 'Chỉnh sửa', exact: true }).click();
+  await page.getByRole('tab', { name: 'Edit', exact: true }).click();
   await saveScreenshot(page, 'desktop');
 });
 
 test('mobile workspace keeps actions visible and supports keyboard dismissal', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await expect(page.getByText('Schema hợp lệ', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Schema editor', exact: true }).click();
+  await expect(page.getByText('Schemas valid', { exact: true })).toBeVisible();
   const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(documentWidth).toBeLessThanOrEqual(390);
-  await expect(page.getByRole('button', { name: 'Xuất ZIP', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Kiểm tra', exact: true })).toBeVisible();
-  const openFiles = page.getByRole('button', { name: 'Mở danh sách file' });
+  await expect(page.getByRole('button', { name: 'Export ZIP', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Validate', exact: true })).toBeVisible();
+  const openFiles = page.getByRole('button', { name: 'Open file browser' });
   await openFiles.click();
-  const closeFiles = page.getByRole('button', { name: 'Đóng danh sách file' });
+  const closeFiles = page.getByRole('button', { name: 'Close file browser' });
   await expect(closeFiles).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(closeFiles).not.toBeVisible();
   await expect(openFiles).toBeFocused();
   await openFiles.click();
-  const search = page.getByRole('textbox', { name: 'Tìm schema' });
+  const search = page.getByRole('textbox', { name: 'Search schemas' });
   await search.fill('common_init');
-  await page.getByRole('button', { name: 'Mở game/app/common/common_init.proto', exact: true }).click();
+  await page.getByRole('button', { name: 'Open game/app/common/common_init.proto', exact: true }).click();
   await expect(closeFiles).not.toBeVisible();
-  await page.getByRole('button', { name: 'Thêm thuộc tính', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Thêm thuộc tính' });
-  await expect(dialog.getByLabel('Tên thuộc tính')).toBeFocused();
+  await page.getByRole('button', { name: 'Add field', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Add field' });
+  await expect(dialog.getByLabel('Field name')).toBeFocused();
   await saveScreenshot(page, 'form');
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
-  const declarationSelector = page.getByRole('combobox', { name: 'Định nghĩa đang chọn' });
+  const declarationSelector = page.getByRole('combobox', { name: 'Selected definition' });
   await declarationSelector.selectOption('game.app.CommonInitResponseProto');
   await expect(page.getByRole('heading', { name: 'CommonInitResponseProto', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
@@ -179,9 +182,10 @@ test('mobile workspace keeps actions visible and supports keyboard dismissal', a
 test('laptop workspace keeps navigation and export usable', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/');
-  await expect(page.getByText('Schema hợp lệ', { exact: true })).toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'Danh sách schema' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Xuất ZIP', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Schema editor', exact: true }).click();
+  await expect(page.getByText('Schemas valid', { exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Schema files' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Export ZIP', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(1280);
   await saveScreenshot(page, 'laptop');
 });

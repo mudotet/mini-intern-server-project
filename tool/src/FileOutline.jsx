@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { BracketsCurly, ListNumbers, Plus, CaretRight } from '@phosphor-icons/react';
+import { BracketsCurly, ListNumbers, Plus, CheckCircle, PencilSimple, FileText } from '@phosphor-icons/react';
 
 export default function FileOutline({ declarations, selected, onSelect, packageName, path, onAdd, busy, changed }) {
   const tree = useMemo(() => {
@@ -12,8 +12,25 @@ export default function FileOutline({ declarations, selected, onSelect, packageN
     }
     return roots;
   }, [declarations]);
-  function renderNodes(nodes, depth = 0) {
-    return <ul>{nodes.map(({ item, children }) => <li key={item.fullName}><button className={`outline-item ${selected === item.fullName ? 'active' : ''}`} style={{ '--depth': depth }} aria-label={`Chọn ${item.fullName}`} aria-current={selected === item.fullName ? 'true' : undefined} onClick={() => onSelect(item.fullName)} title={item.fullName}>{item.fields ? <BracketsCurly size={17}/> : <ListNumbers size={17}/>}<span>{item.name}<small>{item.fields ? 'Message' : 'Enum'}</small></span><b>{(item.fields || item.values).length}</b>{selected === item.fullName && <CaretRight size={12}/>}</button>{children.length > 0 && renderNodes(children, depth + 1)}</li>)}</ul>;
+
+  function renderNodes(nodes, nested = false) {
+    return <ul className={nested ? 'outline-children' : 'outline-roots'}>{nodes.map(({ item, children }) => {
+      const active = selected === item.fullName;
+      const count = (item.fields || item.values).length;
+      return <li key={item.fullName}>
+        <button className={`outline-item ${active ? 'active' : ''}`} aria-label={`Select ${item.fullName}`} aria-current={active ? 'true' : undefined} onClick={() => onSelect(item.fullName)} title={item.fullName}>
+          <span className={`outline-symbol ${item.fields ? '' : 'outline-enum'}`} aria-hidden="true">{item.fields ? <BracketsCurly size={17}/> : <ListNumbers size={17}/>}</span>
+          <span className="outline-label"><span className="outline-name">{item.name}</span><span className="outline-meta"><small>{item.fields ? 'Message' : 'Enum'} · {count} {item.fields ? count === 1 ? 'field' : 'fields' : count === 1 ? 'value' : 'values'}</small>{active && <span className="outline-editing"><CheckCircle size={12} weight="fill" aria-hidden="true"/>Editing</span>}</span></span>
+        </button>
+        {children.length > 0 && renderNodes(children, true)}
+      </li>;
+    })}</ul>;
   }
-  return <aside className="context-aside"><div className="outline-heading"><h2>Cấu trúc file</h2><span>{declarations.length} định nghĩa</span></div><div className="outline-file"><span>{path?.split('/').at(-1)}</span><code>{packageName || '(không có package)'}</code></div><nav className="outline-navigation" aria-label="Cấu trúc file">{tree.length ? renderNodes(tree) : <p className="outline-empty">File chưa có message hoặc enum.</p>}</nav><div className="outline-actions"><span>Thêm định nghĩa</span><div><button className="button small" disabled={busy} onClick={() => onAdd('addMessage')}><Plus size={15}/>Message</button><button className="button small" disabled={busy} onClick={() => onAdd('addEnum')}><Plus size={15}/>Enum</button></div></div><div className="outline-context"><span>{changed ? 'Bản nháp có thay đổi' : 'Khớp với bản gốc'}</span><p>Chọn một định nghĩa để chỉnh sửa trong file này.</p></div></aside>;
+  return <aside className="context-aside">
+    <div className="outline-heading"><div><h2>File outline</h2><span>{declarations.length} definitions</span></div><p>Select a definition to edit its fields.</p></div>
+    <div className="outline-file"><span><FileText size={16} aria-hidden="true"/>{path?.split('/').at(-1)}</span><code>{packageName || '(no package)'}</code></div>
+    <nav className="outline-navigation" aria-label="File outline">{tree.length ? renderNodes(tree) : <p className="outline-empty">This file has no messages or enums yet.</p>}</nav>
+    <div className="outline-actions"><span>Add definition</span><div><button className="button small" disabled={busy} onClick={() => onAdd('addMessage')} title="A message groups related fields"><Plus size={15} aria-hidden="true"/>Message</button><button className="button small" disabled={busy} onClick={() => onAdd('addEnum')} title="An enum defines a set of named values"><Plus size={15} aria-hidden="true"/>Enum</button></div></div>
+    <div className={`outline-file-status ${changed ? 'has-changes' : ''}`} aria-label="File status">{changed ? <PencilSimple size={14} aria-hidden="true"/> : <CheckCircle size={14} aria-hidden="true"/>}<span>{changed ? 'Draft has changes' : 'Matches original'}</span></div>
+  </aside>;
 }

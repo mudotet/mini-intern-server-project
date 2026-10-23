@@ -10,9 +10,9 @@ Implemented flows: Login → Player Init → Static/Daily Shop → Purchase.
 - Root Gradle wrapper, scripts, Docker configuration, and deployment bundle retain their existing locations.
 
 The canonical schema repository is [mudotet/proto_mini-intern-server-project](https://github.com/mudotet/proto_mini-intern-server-project).
-Its initial 14-schema revision is `06a40d0da3a6c14d79acaf0fc40be086a0ad93db`; enter the repository name and this full SHA in Proto Studio's `Mở GitHub` dialog.
+Its initial 14-schema revision is `06a40d0da3a6c14d79acaf0fc40be086a0ad93db`; enter the repository name and this full SHA in Proto Studio's `Source settings` dialog.
 The server pins that repository as a Git submodule at `server/src/main/proto`.
-Proto Studio's local demo reads the same initialized schema directory.
+Proto Studio opens the main dashboard with no schemas loaded. Configure a public GitHub repository and full commit SHA in Source settings to load schemas; no local demo is loaded.
 
 ## Clone with the schema submodule
 
@@ -26,6 +26,8 @@ Run `git submodule status` to check the pinned revision.
 See the [server README](server/README.md) for schema update and backend setup instructions.
 
 ## Run Proto Studio
+
+After importing a repository and commit, Proto Studio opens an admin overview with live file/message/field totals, an interactive field-count chart, a field-type breakdown, and a compiled import explorer. Switch between light and dark themes in the header; the initial theme follows your system and an explicit choice is saved in the browser. The interface is in English. Open Schema editor for file navigation and declaration editing. Compare opens a large overlay above the editor (Escape or Back to editor closes it) and shows the original and draft in split or unified views, with red removals, green additions, inline word highlights, and a changes-only filter. Open the changed-file menu to jump to a draft diff; changes remain local until you export them. The UI/UX Pro Max Codex skill is installed under `.agents/skills/ui-ux-pro-max` using `uipro init --ai codex`.
 
 Requires Node.js 22.12 or newer.
 The tool finds `protoc` on PATH, through `PROTOC`, or in the project's existing Gradle cache.
