@@ -1,6 +1,6 @@
 # Coder
 
-Read [CONTEXT.md](../../../CONTEXT.md), [ROADMAP.md](../ROADMAP.md), and the [API contract](../API_CONTRACT.md). Complete one working flow before moving to the next.
+Read [CONTEXT.md](../../CONTEXT.md), [ROADMAP.md](../ROADMAP.md), and the [API contract](../API_CONTRACT.md). Complete one working flow before moving to the next.
 
 - Handlers parse requests, call services, and return Protobuf; services handle business rules; DAOs read/write DynamoDB. Redis holds Sessions.
 - Use simple classes/constructors. Services may call concrete DAOs. Keep mapping where it is used; extract mappers/interfaces/helpers only when they remove actual duplication.

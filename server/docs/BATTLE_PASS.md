@@ -95,7 +95,7 @@ Implementation defaults: derive Player identity from the validated Session. Pers
 
 ## Implementation and verification order
 
-Detailed implementation plan: [2026-10-23-battle-pass.md](superpowers/plans/2026-10-23-battle-pass.md).
+Detailed implementation plan: [2026-10-23-battle-pass.md](plans/2026-10-23-battle-pass.md).
 
 1. Add shared definitions, Hero catalog, progress model, and Protobuf contracts.
 2. Implement BattlePass view and season selection.

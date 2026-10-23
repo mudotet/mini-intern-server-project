@@ -1,6 +1,6 @@
 # Domain
 
-[CONTEXT.md](../../CONTEXT.md) is the glossary; [ROADMAP.md](ROADMAP.md) records demo rules.
+[CONTEXT.md](../CONTEXT.md) is the glossary; [ROADMAP.md](ROADMAP.md) records demo rules.
 
 Account owns one Player; Device links to Account; Session authenticates identity. InitialResources are granted in the Player creation transaction; Player Init only reads.
 

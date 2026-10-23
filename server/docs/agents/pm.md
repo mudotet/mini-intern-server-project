@@ -1,8 +1,8 @@
 # Planning
 
-Read [CONTEXT.md](../../CONTEXT.md) and [ROADMAP.md](../../server/docs/ROADMAP.md). The goal is a backend demo that can be explained and run on EC2 with Redis/DynamoDB.
+Read [CONTEXT.md](../../CONTEXT.md) and [ROADMAP.md](../ROADMAP.md). The goal is a backend demo that can be explained and run on EC2 with Redis/DynamoDB.
 
-Order: Login + Player Init → StaticShop → DailyShop → Purchase → Docker/AWS.
+Order: Login + Player Init → StaticShop → DailyShop → Purchase → Battle Pass → Docker/AWS.
 
 Each task records the flow to complete, files to read, expected request results, and verification method. Split work by runnable behavior and keep it within the user's learning/working time.
 
