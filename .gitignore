@@ -11,15 +11,26 @@ build
 /.project
 /.settings
 /.gradle
+/.context/
+/server/.gradle/
 /RUNNING_PID
 
-docker/data/
+/server/docker/data/
 
 # Understand Anything generated analysis artifacts
 .ua/
 .understand-anything/
 
 # Proto Studio dependencies and generated artifacts
+/tools/node_modules/
+/tools/dist/
+/tools/.vite/
+/tools/coverage/
+/tools/playwright-report/
+/tools/test-results/
+/tools/artifacts/
+
+# Generated files left by the previous tool directory
 /tool/node_modules/
 /tool/dist/
 /tool/.vite/
@@ -27,6 +38,3 @@ docker/data/
 /tool/playwright-report/
 /tool/test-results/
 /tool/artifacts/
-
-# Conductor workspace notes and screenshots
-/.context/

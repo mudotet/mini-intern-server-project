@@ -15,10 +15,9 @@ If either path doesn't exist, **proceed silently**. Don't flag its absence; don'
 /
 ├── CONTEXT.md
 ├── docs/adr/
-│   ├── 0001-event-sourced-orders.md
-│   └── 0002-postgres-for-write-model.md
+│   └── 0001-proto-schema-versions-by-commit.md
 ├── server/src/
-└── tool/
+└── tools/
 ```
 
 ## Use the glossary's vocabulary

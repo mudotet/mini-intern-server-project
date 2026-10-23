@@ -11,6 +11,10 @@ public final class ApiCodes {
     public static final String PLAYER_RESOURCES = "info/resources";
     public static final String SHOP_PACKAGES = "info/packages";
     public static final String SESSION_INFO = "info/session";
+    public static final String BATTLE_PASS_INFO = "info/battle-pass";
+    public static final String BATTLE_PASS_PURCHASE = "004002";
+    public static final String BATTLE_PASS_CLAIM = "004003";
+    public static final String BATTLE_PASS_QUEST_GRANT = "004004";
 
     private static final String SHOP = "003";
     public static final String SHOP_PURCHASE = SHOP + "002";

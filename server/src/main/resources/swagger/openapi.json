@@ -7,6 +7,7 @@
   },
   "servers": [{"url": "/", "description": "The server hosting this Swagger page"}],
   "tags": [
+    {"name": "06 · Battle Pass", "description": "Ten mixed Free/Premium nodes, 500 expBP each, one reward per node. Quest grant is demo-only."},
     {"name": "01 · Login", "description": "Public metadata and guest identity/Session"},
     {"name": "02 · Player", "description": "Current authenticated Player Resources"},
     {"name": "03 · Shop", "description": "Static packages and frozen daily offers"},
@@ -14,6 +15,301 @@
     {"name": "05 · Information", "description": "Authenticated read-only GET APIs. No body or RequestId is required. Query parameters do not select another Player."}
   ],
   "paths": {
+  "/api/info/battle-pass": {
+    "get": {
+      "tags": [
+        "06 · Battle Pass"
+      ],
+      "operationId": "battlePassView",
+      "summary": "View the shared Battle Pass and your progress",
+      "description": "Ten demo nodes; each needs a full 500 expBP and has one reward. Read this first and use its battle_pass_id in mutations. total_exp_bp=510 means one reached node plus 10/500 into node 2. Reached, claimed, and claimable are separate. Heroes lists the shared catalog; owned_heroes lists permanent Player ownership.",
+      "security": [
+        {
+          "BearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OptionalRequestId"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Battle Pass result",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BattlePassResponseProto"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/InvalidRequest"
+        },
+        "401": {
+          "$ref": "#/components/responses/Unauthorized"
+        },
+        "409": {
+          "$ref": "#/components/responses/Conflict"
+        },
+        "500": {
+          "$ref": "#/components/responses/InternalError"
+        },
+        "404": {
+          "description": "Node/route not found; demo Quest route is absent unless explicitly enabled",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BusinessErrorProto"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/004002": {
+    "post": {
+      "tags": [
+        "06 · Battle Pass"
+      ],
+      "operationId": "battlePassPurchase",
+      "summary": "Buy Premium for this pass with 100 Gems",
+      "description": "Unlocks all Premium nodes in the selected active pass. It does not grant rewards or EXP. Already-owned Premium cannot charge again. Reuse the same RequestId/input to replay a result.",
+      "security": [
+        {
+          "BearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RequiredRequestId"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Battle Pass result",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BattlePassPurchaseResponseProto"
+              }
+            },
+            "application/x-protobuf": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/InvalidRequest"
+        },
+        "401": {
+          "$ref": "#/components/responses/Unauthorized"
+        },
+        "409": {
+          "$ref": "#/components/responses/Conflict"
+        },
+        "500": {
+          "$ref": "#/components/responses/InternalError"
+        },
+        "404": {
+          "description": "Node/route not found; demo Quest route is absent unless explicitly enabled",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BusinessErrorProto"
+              }
+            }
+          }
+        }
+      },
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/BattlePassPurchaseRequestProto"
+            },
+            "example": {
+              "battle_pass_id": "demo_bp-0"
+            }
+          },
+          "application/x-protobuf": {
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/004003": {
+    "post": {
+      "tags": [
+        "06 · Battle Pass"
+      ],
+      "operationId": "battlePassClaim",
+      "summary": "Claim one reached Free or Premium node",
+      "description": "One node, one actual reward. Claim eligible nodes in any order; full EXP and Premium entitlement are checked on the server. Duplicate Heroes give 10/50/100 Gems by Basic/Epic/Legendary rarity instead. New claims on claimed nodes return NODE_ALREADY_CLAIMED; retry the original RequestId to replay its result.",
+      "security": [
+        {
+          "BearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RequiredRequestId"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Battle Pass result",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BattlePassClaimResponseProto"
+              }
+            },
+            "application/x-protobuf": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/InvalidRequest"
+        },
+        "401": {
+          "$ref": "#/components/responses/Unauthorized"
+        },
+        "409": {
+          "$ref": "#/components/responses/Conflict"
+        },
+        "500": {
+          "$ref": "#/components/responses/InternalError"
+        },
+        "404": {
+          "description": "Node/route not found; demo Quest route is absent unless explicitly enabled",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BusinessErrorProto"
+              }
+            }
+          }
+        }
+      },
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/BattlePassClaimRequestProto"
+            },
+            "example": {
+              "battle_pass_id": "demo_bp-0",
+              "node_id": "node_1"
+            }
+          },
+          "application/x-protobuf": {
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/004004": {
+    "post": {
+      "tags": [
+        "06 · Battle Pass"
+      ],
+      "operationId": "battlePassQuestGrant",
+      "summary": "DEMO ONLY: simulate a Quest EXP reward",
+      "description": "Requires DEMO_QUEST_GRANTS_ENABLED=true; default false and absent from EC2 configuration. This simulates a trusted Quest system, not Player-controlled production EXP. Use a new grant_id for each legitimate completion; retrying any grant_id cannot award twice, even with a different RequestId. Same Quest IDs may repeat. Try 400 then 110 with a different grant_id to see overflow carry. EXP caps at 5000 and never auto-claims node rewards.",
+      "security": [
+        {
+          "BearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RequiredRequestId"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Battle Pass result",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BattlePassQuestGrantResponseProto"
+              }
+            },
+            "application/x-protobuf": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/InvalidRequest"
+        },
+        "401": {
+          "$ref": "#/components/responses/Unauthorized"
+        },
+        "409": {
+          "$ref": "#/components/responses/Conflict"
+        },
+        "500": {
+          "$ref": "#/components/responses/InternalError"
+        },
+        "404": {
+          "description": "Node/route not found; demo Quest route is absent unless explicitly enabled",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BusinessErrorProto"
+              }
+            }
+          }
+        }
+      },
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/BattlePassQuestGrantRequestProto"
+            },
+            "example": {
+              "battle_pass_id": "demo_bp-0",
+              "quest_id": "quest_demo",
+              "grant_id": "completion_1",
+              "exp_bp": "400"
+            }
+          },
+          "application/x-protobuf": {
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          }
+        }
+      }
+    }
+  },
     "/api/001003": {"post": {
       "tags": ["01 · Login"], "operationId": "publicInit", "summary": "Public initialization metadata", "security": [],
       "description": "CommonInitRequest → CommonInitResponseProto. Public server time and versions; not Player Init.",
@@ -113,6 +409,267 @@
     },
     "requestBodies": {"Empty": {"required": false, "description": "Select application/json for Try it out; use {} or an empty body. For Protobuf, upload encoded binary. Unknown JSON fields are rejected. Maximum body: 65536 bytes, received within 5 seconds.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/EmptyRequest"}}, "application/x-protobuf": {"schema": {"type": "string", "format": "binary"}}}}},
     "schemas": {
+  "BattlePassRewardProto": {
+    "description": "Exactly one reward. Duplicate Heroes produce a Gem Resource instead.",
+    "oneOf": [
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "resource": {
+            "$ref": "#/components/schemas/Resource"
+          }
+        },
+        "required": [
+          "resource"
+        ]
+      },
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "hero_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "hero_id"
+        ]
+      }
+    ]
+  },
+  "HeroProto": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "hero_id": {
+        "type": "string"
+      },
+      "rarity": {
+        "type": "string",
+        "enum": [
+          "BASIC",
+          "EPIC",
+          "LEGENDARY"
+        ]
+      }
+    }
+  },
+  "BattlePassProgressProto": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "battle_pass_id": {
+        "type": "string"
+      },
+      "total_exp_bp": {
+        "$ref": "#/components/schemas/Int64"
+      },
+      "premium_owned": {
+        "type": "boolean"
+      },
+      "claimed_node_ids": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "reached_nodes": {
+        "type": "integer",
+        "format": "int32"
+      },
+      "exp_into_next_node": {
+        "$ref": "#/components/schemas/Int64"
+      },
+      "completed": {
+        "type": "boolean"
+      }
+    }
+  },
+  "BattlePassNodeProto": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "node_id": {
+        "type": "string"
+      },
+      "position": {
+        "type": "integer",
+        "format": "int32"
+      },
+      "required_total_exp": {
+        "$ref": "#/components/schemas/Int64"
+      },
+      "premium": {
+        "type": "boolean"
+      },
+      "reward": {
+        "$ref": "#/components/schemas/BattlePassRewardProto"
+      },
+      "reached": {
+        "type": "boolean"
+      },
+      "claimed": {
+        "type": "boolean"
+      },
+      "claimable": {
+        "type": "boolean"
+      }
+    }
+  },
+  "BattlePassResponseProto": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "battle_pass_id": {
+        "type": "string"
+      },
+      "starts_at": {
+        "$ref": "#/components/schemas/Int64"
+      },
+      "ends_at": {
+        "$ref": "#/components/schemas/Int64"
+      },
+      "premium_price_gems": {
+        "$ref": "#/components/schemas/Int64"
+      },
+      "progress": {
+        "$ref": "#/components/schemas/BattlePassProgressProto"
+      },
+      "nodes": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/BattlePassNodeProto"
+        }
+      },
+      "owned_heroes": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/HeroProto"
+        }
+      },
+      "resources": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Resource"
+        }
+      },
+      "heroes": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/HeroProto"
+        }
+      }
+    }
+  },
+  "BattlePassPurchaseRequestProto": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "battle_pass_id": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "battle_pass_id"
+    ]
+  },
+  "BattlePassPurchaseResponseProto": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "progress": {
+        "$ref": "#/components/schemas/BattlePassProgressProto"
+      },
+      "resources": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Resource"
+        }
+      }
+    }
+  },
+  "BattlePassClaimRequestProto": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "battle_pass_id": {
+        "type": "string"
+      },
+      "node_id": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "battle_pass_id",
+      "node_id"
+    ]
+  },
+  "BattlePassClaimResponseProto": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "node_id": {
+        "type": "string"
+      },
+      "reward": {
+        "$ref": "#/components/schemas/BattlePassRewardProto"
+      },
+      "progress": {
+        "$ref": "#/components/schemas/BattlePassProgressProto"
+      },
+      "resources": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Resource"
+        }
+      },
+      "owned_heroes": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/HeroProto"
+        }
+      }
+    }
+  },
+  "BattlePassQuestGrantRequestProto": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "battle_pass_id": {
+        "type": "string"
+      },
+      "quest_id": {
+        "type": "string"
+      },
+      "grant_id": {
+        "type": "string"
+      },
+      "exp_bp": {
+        "type": "string",
+        "pattern": "^[1-9][0-9]*$",
+        "example": "510"
+      }
+    },
+    "required": [
+      "battle_pass_id",
+      "quest_id",
+      "grant_id",
+      "exp_bp"
+    ]
+  },
+  "BattlePassQuestGrantResponseProto": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "progress": {
+        "$ref": "#/components/schemas/BattlePassProgressProto"
+      },
+      "exp_bp_granted": {
+        "$ref": "#/components/schemas/Int64"
+      }
+    }
+  },
       "EmptyRequest": {"type": "object", "additionalProperties": false, "properties": {}, "example": {}},
       "Int64": {"type": "string", "pattern": "^[0-9]+$", "description": "Nonnegative int64 in Protobuf JSON", "example": "1790787600"},
       "CommonLoginClientProto": {"type": "object", "additionalProperties": false, "properties": {"platform": {"type": "string"}, "identifier": {"type": "string"}, "version": {"type": "string"}}},
