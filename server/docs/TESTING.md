@@ -1,6 +1,6 @@
 # Demo testing
 
-Run server commands from the `server/` directory. Run client commands from `client/`.
+Run server commands from the `server/` directory. Run client commands from `tools/`.
 
 Use Java 11:
 
@@ -37,8 +37,8 @@ The previous documentation dated 2026-09-30 is superseded by actual local verifi
 
 ## Proto Studio Local Demo
 
-Run `npm run dev` from the repository's `client/` directory and leave it running at http://127.0.0.1:5173.
-In another terminal, run these checks from the same `client/` directory:
+Run `npm run dev` from the repository's `tools/` directory and leave it running at http://127.0.0.1:5173.
+In another terminal, run these checks from the same `tools/` directory:
 
 ```bash
 npm test
@@ -51,9 +51,9 @@ The browser tests exercise nested folder navigation, search, declaration outline
 Desktop, laptop, mobile, form, and export-dialog screenshots were visually inspected after the redesign.
 Responsive browser coverage includes 320×568, 390×844, 768×1024, 1024×600, 1440×960, and landscape 844×390.
 It checks field actions without horizontal table scrolling, 44px edit targets, file drawers, source/diff layouts, and scrollable form/export dialogs.
-Responsive screenshots are saved in `client/artifacts/responsive/`.
+Responsive screenshots are saved in `tools/artifacts/responsive/`.
 Compiler tests use real protoc; GitHub success/error tests use controlled HTTP responses rather than a live published schema commit.
-Browser screenshots are written to `client/artifacts/` and ignored by Git.
+Browser screenshots are written to `tools/artifacts/` and ignored by Git.
 Set `CHROME_EXECUTABLE` to an installed Chrome executable or install the Playwright Chromium browser before running browser tests.
 
 After moving the Java project into `server/`, `./gradlew compileJava test integrationTest installDist` passed 9 unit and 14 real Redis/DynamoDB Local integration tests on 2026-10-21.

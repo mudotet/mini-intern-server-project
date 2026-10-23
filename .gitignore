@@ -22,10 +22,19 @@ build
 .understand-anything/
 
 # Proto Studio dependencies and generated artifacts
-/client/node_modules/
-/client/dist/
-/client/.vite/
-/client/coverage/
-/client/playwright-report/
-/client/test-results/
-/client/artifacts/
+/tools/node_modules/
+/tools/dist/
+/tools/.vite/
+/tools/coverage/
+/tools/playwright-report/
+/tools/test-results/
+/tools/artifacts/
+
+# Generated files left by the previous tool directory
+/tool/node_modules/
+/tool/dist/
+/tool/.vite/
+/tool/coverage/
+/tool/playwright-report/
+/tool/test-results/
+/tool/artifacts/

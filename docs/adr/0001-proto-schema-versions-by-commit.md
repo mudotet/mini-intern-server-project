@@ -30,7 +30,7 @@ Comprehensive compatibility analysis across old and new consumers is deferred so
 
 ## Local Demo Implementation
 
-The local demo uses `client/` for the independent workspace and `server/` for the Java game subproject, with Gradle and Docker infrastructure inside `server/`.
+The local demo uses `tools/` for the independent workspace and `server/` for the Java game subproject, with Gradle and Docker infrastructure inside `server/`.
 Drafts and their original schema snapshot are stored in browser local storage.
 The forms support adding messages and enums, adding/editing/removing fields, and adding/editing/removing enum values, including repeated and map field types.
 The canonical repository's initial 14-schema commit is `06a40d0da3a6c14d79acaf0fc40be086a0ad93db`, published on 2026-10-21.

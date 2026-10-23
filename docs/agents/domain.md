@@ -17,7 +17,7 @@ If either path doesn't exist, **proceed silently**. Don't flag its absence; don'
 ├── docs/adr/
 │   └── 0001-proto-schema-versions-by-commit.md
 ├── server/src/
-└── client/
+└── tools/
 ```
 
 ## Use the glossary's vocabulary
