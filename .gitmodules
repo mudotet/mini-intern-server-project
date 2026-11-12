@@ -1,3 +1,6 @@
 [submodule "server/src/main/proto"]
 	path = server/src/main/proto
 	url = https://github.com/mudotet/proto_mini-intern-server-project.git
+[submodule "mobile"]
+	path = mobile
+	url = https://github.com/mudotet/mobile-demo-for-mini-intern-project.git

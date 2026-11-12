@@ -7,6 +7,7 @@ Implemented flows: Login → Player Init → Static/Daily Shop → Purchase.
 
 - `server/`: Java game source, schemas, resources, tests, and Gradle build.
 - `tool/`: independent local Proto Studio demo.
+- `mobile/`: Expo mobile demo, pinned as a Git submodule from [mobile-demo-for-mini-intern-project](https://github.com/mudotet/mobile-demo-for-mini-intern-project).
 - Root Gradle wrapper, scripts, Docker configuration, and deployment bundle retain their existing locations.
 
 The canonical schema repository is [mudotet/proto_mini-intern-server-project](https://github.com/mudotet/proto_mini-intern-server-project).
@@ -14,7 +15,7 @@ Its initial 14-schema revision is `06a40d0da3a6c14d79acaf0fc40be086a0ad93db`; en
 The server pins that repository as a Git submodule at `server/src/main/proto`.
 Proto Studio's local demo reads the same initialized schema directory.
 
-## Clone with the schema submodule
+## Clone with submodules
 
 ```bash
 git clone --recurse-submodules https://github.com/mudotet/mini-intern-server-project.git
@@ -24,6 +25,22 @@ cd mini-intern-server-project
 For an existing clone, run `git submodule update --init --recursive` from the repository root before building the server or opening the local schema demo.
 Run `git submodule status` to check the pinned revision.
 See the [server README](server/README.md) for schema update and backend setup instructions.
+
+## Run the mobile demo
+
+Initialize `mobile/` with `git submodule update --init mobile` from this repository root.
+Use Node.js 24 LTS, Java 11, and Docker for the local demo.
+
+```bash
+cd mobile
+npm ci
+npm run backend
+```
+
+In a second terminal, run `cd mobile` from the repository root and `npm start -- --lan`.
+Open the project in Expo Go SDK 58 on an iPhone on the same Wi-Fi.
+See [the mobile README](mobile/README.md) for setup, the 3D dealer, Shop, Battle Pass, and verification.
+Changes to the client are committed and pushed in `mobile/`, then the parent repository records the new mobile commit.
 
 ## Run Proto Studio
 
