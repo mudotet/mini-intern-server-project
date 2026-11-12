@@ -52,6 +52,7 @@ Build the backend distribution with Java 11, then create the versioned runtime i
 The iPhone client runs through Expo Go and connects to this container over Wi-Fi.
 
 ```bash
+docker compose --env-file /dev/null -f docker/docker-compose.yaml up -d --wait redis dynamodb
 ./gradlew clean compileJava test integrationTest installDist
 docker build -f docker/application/Dockerfile -t mini-game-server:1.1.0 -t mini-game-server:demo .
 export JWT_SECRET="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"

@@ -13,7 +13,7 @@ cd mini-intern-server-project
 git submodule status
 ```
 
-For an existing clone, run from the repository root:
+For an existing clone, switch to `release/mobile-demo-2026-11-12`, then run from the repository root:
 
 ```bash
 git submodule update --init --recursive
