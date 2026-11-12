@@ -1,13 +1,13 @@
 services:
   app:
     profiles: ["app"]
-    image: mini-game-server:demo
+    image: ${GAME_IMAGE:-mini-game-server:demo}
     build:
       context: ../
       dockerfile: docker/application/Dockerfile
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8080:8080"
+      - "${GAME_BIND_ADDRESS:-127.0.0.1}:8080:8080"
     environment:
       JWT_SECRET: ${JWT_SECRET:-}
       GAME_TABLE: ${GAME_TABLE:-mini_game}
@@ -19,6 +19,34 @@ services:
         condition: service_healthy
       dynamodb:
         condition: service_started
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin:5.3.4
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8001:8001"
+    environment:
+      HOST: 0.0.0.0
+      DYNAMO_ENDPOINT: http://dynamodb:8000
+      AWS_REGION: ap-southeast-1
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+    depends_on:
+      dynamodb:
+        condition: service_started
+  redisinsight:
+    image: redis/redisinsight:3.8.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5540:5540"
+    environment:
+      RI_REDIS_HOST: redis
+      RI_REDIS_PORT: 6379
+      RI_REDIS_ALIAS: Mini Game Local
+    volumes:
+      - redisinsight:/data
+    depends_on:
+      redis:
+        condition: service_healthy
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -41,3 +69,6 @@ services:
     command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "./data"]
     volumes:
       - ./data/dynamodb:/home/dynamodblocal/data
+volumes:
+  redisinsight:
+    name: mini-game-redisinsight

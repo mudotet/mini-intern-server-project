@@ -70,7 +70,8 @@ public final class PurchaseService {
             }
             ShopPurchaseResponseProto response = ShopPurchaseResponseProto.newBuilder().setOfferId(offerId)
                     .addAllItems(PlayerService.resourceList(rewards)).addAllResources(PlayerService.resourceList(resources)).build();
-            if (dao.purchase(new Player(player.accountId, playerId, player.version, resources, snapshot), requestId, offerId, amount, response)) return response;
+            if (dao.purchase(new Player(player.accountId, playerId, player.version, resources, snapshot,
+                    BattlePassService.applyPurchase(player, rewards, shop.now())), requestId, offerId, amount, response)) return response;
         }
         Receipt receipt = dao.receipt(playerId, requestId);
         if (receipt != null) return replay(receipt, offerId, amount);

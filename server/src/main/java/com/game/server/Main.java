@@ -11,6 +11,7 @@ import com.game_server.general.app.handler.player.PlayerInitHandler;
 import com.game_server.general.app.handler.player.PlayerInfoHandler;
 import com.game_server.general.app.handler.player.PlayerResourcesHandler;
 import com.game_server.general.app.handler.shop.*;
+import com.game_server.general.app.handler.battlepass.*;
 import com.game_server.general.app.helper.JwtHelper;
 import com.game_server.general.config.GlobalConfig;
 import com.game_server.general.dao.GameDao;
@@ -30,13 +31,18 @@ public final class Main {
                                                SessionService sessions, Clock clock) {
         ShopService shop = new ShopService(dao, ShopCatalog.load(), clock, new Random());
         PlayerService players = new PlayerService(dao);
+        BattlePassService battlePass = new BattlePassService(dao, clock);
         return new AppHandlerProvider(List.of(new InitHandler(),
                 new LoginHandler(new LoginService(dao, redis, jwt, sessions, clock)),
                 new PlayerInitHandler(sessions, players),
                 new PlayerInfoHandler(sessions, players), new PlayerResourcesHandler(sessions, players),
                 new ShopPackagesHandler(sessions, shop), new SessionInfoHandler(sessions),
                 new ShopStaticHandler(sessions, shop), new ShopDailyHandler(sessions, shop),
-                new PurchaseHandler(sessions, new PurchaseService(dao, shop))));
+                new PurchaseHandler(sessions, new PurchaseService(dao, shop)),
+                new BattlePassStateHandler(sessions, battlePass),
+                new BattlePassClaimHandler(sessions, battlePass),
+                new BattlePassPremiumHandler(sessions, battlePass),
+                new BattlePassQuestHandler(sessions, battlePass)));
     }
 
     public static void main(String[] args) {

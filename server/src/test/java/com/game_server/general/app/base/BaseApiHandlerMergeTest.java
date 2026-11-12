@@ -56,7 +56,11 @@ class BaseApiHandlerMergeTest {
                 .toCompletableFuture().get(5, TimeUnit.SECONDS);
         assertEquals(200, spec.status().intValue());
         var document = com.google.gson.JsonParser.parseString(new String(body(spec), java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
-        assertEquals(10, document.getAsJsonObject("paths").size());
+        var paths = document.getAsJsonObject("paths");
+        assertEquals(14, paths.size());
+        for (String path : List.of("/api/004001", "/api/004002", "/api/004003", "/api/004004")) {
+            assertTrue(paths.getAsJsonObject(path).has("post"));
+        }
         assertEquals("bearer", document.getAsJsonObject("components").getAsJsonObject("securitySchemes")
                 .getAsJsonObject("BearerAuth").get("scheme").getAsString());
         HttpResponse bundle = provider.routes().handler(system).apply(HttpRequest.create("/swagger/assets/swagger-ui-bundle.js"))

@@ -16,4 +16,8 @@ public final class ApiCodes {
     public static final String SHOP_PURCHASE = SHOP + "002";
     public static final String SHOP_STATIC = SHOP + "004";
     public static final String SHOP_DAILY = SHOP + "005";
+    public static final String BATTLE_PASS_STATE = "004001";
+    public static final String BATTLE_PASS_CLAIM = "004002";
+    public static final String BATTLE_PASS_PREMIUM = "004003";
+    public static final String BATTLE_PASS_QUEST = "004004";
 }

@@ -1,7 +1,7 @@
 # Mini game server
 
 Backend demo using Java 11, Akka HTTP, Protobuf, Redis, and DynamoDB.
-Implemented flows: Login → Player Init → Static/Daily Shop → Purchase.
+Implemented flows include Login, Player Init, Static/Daily Shop, Purchase, and the weekly Battle Pass.
 
 ## Repository layout
 
@@ -11,20 +11,24 @@ Implemented flows: Login → Player Init → Static/Daily Shop → Purchase.
 - Root Gradle wrapper, scripts, Docker configuration, and deployment bundle retain their existing locations.
 
 The canonical schema repository is [mudotet/proto_mini-intern-server-project](https://github.com/mudotet/proto_mini-intern-server-project).
-Its initial 14-schema revision is `06a40d0da3a6c14d79acaf0fc40be086a0ad93db`; enter the repository name and this full SHA in Proto Studio's `Mở GitHub` dialog.
+This release pins the 15-schema revision `90b06fc283a1a6c3b47b41f4e48cb0c53e3e78f2`, including the mobile Battle Pass contract.
+Enter the repository name and this full SHA in Proto Studio's `Mở GitHub` dialog.
 The server pins that repository as a Git submodule at `server/src/main/proto`.
 Proto Studio's local demo reads the same initialized schema directory.
 
 ## Clone with submodules
 
 ```bash
-git clone --recurse-submodules https://github.com/mudotet/mini-intern-server-project.git
+git clone --branch release/mobile-demo-2026-11-12 --recurse-submodules https://github.com/mudotet/mini-intern-server-project.git
 cd mini-intern-server-project
 ```
 
-For an existing clone, run `git submodule update --init --recursive` from the repository root before building the server or opening the local schema demo.
+For an existing clone, switch to `release/mobile-demo-2026-11-12`, then run `git submodule update --init --recursive` from the repository root before building the server or opening the local schema demo.
 Run `git submodule status` to check the pinned revision.
 See the [server README](server/README.md) for schema update and backend setup instructions.
+
+This release preserves the mobile demo's weekly six-milestone Battle Pass contract.
+The main branch contains a separate server/tools reorganization and Battle Pass implementation.
 
 ## Run the mobile demo
 
@@ -41,6 +45,36 @@ In a second terminal, run `cd mobile` from the repository root and `npm start --
 Open the project in Expo Go SDK 58 on an iPhone on the same Wi-Fi.
 See [the mobile README](mobile/README.md) for setup, the 3D dealer, Shop, Battle Pass, and verification.
 Changes to the client are committed and pushed in `mobile/`, then the parent repository records the new mobile commit.
+
+## Docker release 1.1.0
+
+Build the backend distribution with Java 11, then create the versioned runtime image.
+The iPhone client runs through Expo Go and connects to this container over Wi-Fi.
+
+```bash
+./gradlew clean compileJava test integrationTest installDist
+docker build -f docker/application/Dockerfile -t mini-game-server:1.1.0 -t mini-game-server:demo .
+export JWT_SECRET="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+GAME_IMAGE=mini-game-server:1.1.0 GAME_TABLE=mini_mobile_demo GAME_BIND_ADDRESS=0.0.0.0 \
+  docker compose --env-file /dev/null -f docker/docker-compose.yaml --profile app up -d
+```
+
+Port 8080 must be available before starting the app container.
+Open [Swagger](http://localhost:8080/swagger/) and configure the iPhone Connection with the Mac's Wi-Fi address on port 8080.
+The demo table and Redis/DynamoDB data volumes survive container restarts.
+Keep the same JWT secret when recreating the app container to retain existing sessions, or let the client sign in again.
+Omit `GAME_BIND_ADDRESS=0.0.0.0` to use the default loopback-only binding.
+
+Export the backend image for another ARM64 Docker machine.
+
+```bash
+mkdir -p build
+docker save mini-game-server:1.1.0 | gzip > build/mini-game-server-1.1.0-arm64.tar.gz
+docker load -i build/mini-game-server-1.1.0-arm64.tar.gz
+```
+
+The archive contains the backend runtime image.
+The Compose file supplies Redis, DynamoDB Local, and their administration interfaces.
 
 ## Run Proto Studio
 

@@ -2,6 +2,8 @@ package com.game_server.general.dao;
 
 import com.game.server.proto.ShopModel.ShopDailySnapshotProto;
 import com.game.server.proto.ShopPurchaseResponse.ShopPurchaseResponseProto;
+import com.game.server.proto.BattlePassContract.BattlePassSnapshotProto;
+import com.game.server.proto.BattlePassContract.BattlePassMutationResponseProto;
 import com.game_server.general.service.GameException;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.*;
@@ -74,8 +76,10 @@ public final class GameDao {
         try {
             return new Player(data.get("account_id").s(), playerId, Long.parseLong(data.get("version").n()), resources,
                     data.containsKey("daily") ? ShopDailySnapshotProto.parseFrom(data.get("daily").b().asByteArray())
-                            : ShopDailySnapshotProto.getDefaultInstance());
-        } catch (InvalidProtocolBufferException malformed) { throw new IllegalStateException("Invalid persisted daily snapshot", malformed); }
+                            : ShopDailySnapshotProto.getDefaultInstance(),
+                    data.containsKey("battle_pass") ? BattlePassSnapshotProto.parseFrom(data.get("battle_pass").b().asByteArray())
+                            : BattlePassSnapshotProto.getDefaultInstance());
+        } catch (InvalidProtocolBufferException malformed) { throw new IllegalStateException("Invalid persisted player snapshot", malformed); }
     }
 
     public boolean save(Player player) {
@@ -100,6 +104,26 @@ public final class GameDao {
         receipt.put("id", s("purchase:" + player.playerId + ":" + requestId));
         receipt.put("offer_id", s(offerId)); receipt.put("amount", n(amount));
         receipt.put("response", AttributeValue.builder().b(SdkBytes.fromByteArray(response.toByteArray())).build());
+        return transact(player, receipt);
+    }
+
+    public BattlePassReceipt battlePassReceipt(String playerId, String requestId) {
+        Map<String, AttributeValue> data = get("battlepass:" + playerId + ":" + requestId);
+        if (data.isEmpty()) return null;
+        try { return new BattlePassReceipt(data.get("fingerprint").s(),
+                BattlePassMutationResponseProto.parseFrom(data.get("response").b().asByteArray())); }
+        catch (InvalidProtocolBufferException malformed) { throw new IllegalStateException("Invalid persisted battle pass receipt", malformed); }
+    }
+
+    public boolean battlePassMutation(Player player, String requestId, String fingerprint, BattlePassMutationResponseProto response) {
+        Map<String, AttributeValue> receipt = new HashMap<>();
+        receipt.put("id", s("battlepass:" + player.playerId + ":" + requestId));
+        receipt.put("fingerprint", s(fingerprint));
+        receipt.put("response", AttributeValue.builder().b(SdkBytes.fromByteArray(response.toByteArray())).build());
+        return transact(player, receipt);
+    }
+
+    private boolean transact(Player player, Map<String, AttributeValue> receipt) {
         Put update = Put.builder().tableName(table).item(item(player, player.version + 1))
                 .conditionExpression("#v = :v").expressionAttributeNames(Map.of("#v", "version"))
                 .expressionAttributeValues(Map.of(":v", n(player.version))).build();
@@ -131,6 +155,7 @@ public final class GameDao {
         player.resources.forEach((key, value) -> resources.put(key, n(value)));
         result.put("resources", AttributeValue.builder().m(resources).build());
         result.put("daily", AttributeValue.builder().b(SdkBytes.fromByteArray(player.daily.toByteArray())).build());
+        result.put("battle_pass", AttributeValue.builder().b(SdkBytes.fromByteArray(player.battlePass.toByteArray())).build());
         return result;
     }
     private static AttributeValue s(String value) { return AttributeValue.builder().s(value).build(); }
@@ -148,9 +173,15 @@ public final class GameDao {
         public final long version;
         public final Map<String, Long> resources;
         public final ShopDailySnapshotProto daily;
+        public final BattlePassSnapshotProto battlePass;
         public Player(String accountId, String playerId, long version, Map<String, Long> resources, ShopDailySnapshotProto daily) {
+            this(accountId, playerId, version, resources, daily, BattlePassSnapshotProto.getDefaultInstance());
+        }
+        public Player(String accountId, String playerId, long version, Map<String, Long> resources, ShopDailySnapshotProto daily,
+                      BattlePassSnapshotProto battlePass) {
             this.accountId = accountId; this.playerId = playerId; this.version = version;
             this.resources = Collections.unmodifiableMap(new TreeMap<>(resources)); this.daily = daily;
+            this.battlePass = Objects.requireNonNull(battlePass);
         }
     }
     public static final class Receipt {
@@ -159,6 +190,14 @@ public final class GameDao {
         public final ShopPurchaseResponseProto response;
         public Receipt(String offerId, int amount, ShopPurchaseResponseProto response) {
             this.offerId = offerId; this.amount = amount; this.response = response;
+        }
+    }
+    public static final class BattlePassReceipt {
+        public final String fingerprint;
+        public final BattlePassMutationResponseProto response;
+        public BattlePassReceipt(String fingerprint, BattlePassMutationResponseProto response) {
+            this.fingerprint = fingerprint;
+            this.response = response;
         }
     }
 }

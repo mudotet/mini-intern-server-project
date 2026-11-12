@@ -25,14 +25,25 @@ Packages are shared configuration; DailyOffer is the selected sale terms for one
 
 ## Actual local verification and remaining work
 
-- Swagger has 10 endpoints; the Information section adds GET Player/Resource/Package/Session for display.
+- Swagger has 14 endpoints; the Information section adds GET Player/Resource/Package/Session for display.
 - ./gradlew test integrationTest passed 9 unit + 14 HTTP integration tests with Redis/DynamoDB Local on 2026-10-02. The final ./gradlew clean compileJava test integrationTest build passed in 24 seconds.
 - Empty or out-of-scope schemas/files have been removed; create only classes with meaningful behavior.
 - ./gradlew installDist and the repair-validation Docker build passed; the image ran as nonroot UID 10001. The rebuilt isolated app on port 18080 returned Swagger HTTP 200 and passed JSON Login/Init/Static/Daily/Purchase, Protobuf purchase retry, and all four information APIs through scripts/demo.sh. Dedicated validation table/keys were cleaned; existing user containers were untouched.
 - AWS mode uses the default credential chain; the EC2 image uses a built Java distribution.
 - EC2/region/IAM and SSH details are needed for live AWS verification. No cloud resources have been provisioned or deployed in this session.
 
-The user has approximately 2 weeks, 1 hour/day, and reported a Free Plan with $100 credit. Use the remaining time to read each flow, rerun the demo, and deploy to AWS; no additional out-of-scope flows are needed.
+## Mobile demo and Battle Pass
+
+The Expo SDK 58 client in `mobile/` presents Home, Shop, and Battle Pass with an original animated Three.js dealer.
+It uses guest Login and the real backend over the local Wi-Fi network.
+Battle Pass adds four authenticated endpoints, six milestone pairs, manual quest claims, and Premium for 50 Gems per weekly season.
+Daily quests derive progress from successful Shop purchases.
+EXPBP is cumulative within the season and separate from Player XP.
+See [API_CONTRACT.md](API_CONTRACT.md) and [mobile/README.md](../mobile/README.md) for the contract and presentation steps.
+
+Local Battle Pass verification on 2026-11-12 passed 12 unit tests and 25 HTTP integration tests with Redis and DynamoDB Local.
+The mobile client passed 28 unit checks and the live browser Battle Pass flow, including a lost-response retry across reload.
+Physical iPhone rendering remains an on-device verification step.
 
 ## Learning/rehearsal order
 
@@ -44,4 +55,5 @@ The user has approximately 2 weeks, 1 hour/day, and reported a Free Plan with $1
 6. Restart the app and check data; read Clock tests to explain day changes.
 7. Follow [DEPLOYMENT.md](DEPLOYMENT.md), run on EC2, and rehearse.
 
-Backend demo only; keep scope to gold/gem/XP, with no IAP, game UI, or reset worker.
+The current demo uses Gold, Gems, Player XP, and separate Battle Pass EXPBP.
+Premium uses Gems, and resets occur lazily through API requests.

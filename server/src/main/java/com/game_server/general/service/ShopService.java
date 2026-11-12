@@ -49,8 +49,8 @@ public final class ShopService {
             Player player = dao.player(playerId);
             long time = now();
             if (player.daily.getSlotsCount() > 0 && player.daily.getCycleStart() <= time && time < player.daily.getExpiresAt()) return player;
-            Player updated = new Player(player.accountId, playerId, player.version, player.resources, snapshot(time));
-            if (dao.save(updated)) return new Player(updated.accountId, playerId, updated.version + 1, updated.resources, updated.daily);
+            Player updated = new Player(player.accountId, playerId, player.version, player.resources, snapshot(time), player.battlePass);
+            if (dao.save(updated)) return new Player(updated.accountId, playerId, updated.version + 1, updated.resources, updated.daily, updated.battlePass);
         }
         throw new GameException(409, "RETRY", "Retry this request");
     }

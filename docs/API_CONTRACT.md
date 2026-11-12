@@ -1,6 +1,6 @@
 # API contract
 
-Game flows use HTTP POST with Content-Type: application/x-protobuf or application/json. Responses use the same format as requests. X-Request-Id is echoed; Login/Purchase require 16–128 letters/digits/underscores/hyphens, preferably a random UUID. Information APIs use GET and always return JSON.
+Game flows use HTTP POST with Content-Type: application/x-protobuf or application/json. Responses use the same format as requests. X-Request-Id is echoed; Login/Purchase/Battle Pass mutations require 16–128 letters/digits/underscores/hyphens, preferably a random UUID. Information APIs use GET and always return JSON.
 
 ## Swagger and JSON
 
@@ -58,6 +58,45 @@ The Purchase request's id is taken from the shop response, with amount=1. The se
 
 The same (Player, RequestId, offer ID, amount) returns the stored original response, even if the current balance has changed or the offer has expired. The same RequestId with different input returns 409. Receipts do not expire in this demo.
 
+## Battle Pass
+
+All four endpoints use POST with the existing JSON/Protobuf transport and authenticated Player.
+The Swagger **06 · Battle Pass** group documents their full request and response schemas.
+
+| Flow | Path | Request |
+| --- | --- | --- |
+| State | /api/004001 | Empty body |
+| Claim milestone | /api/004002 | pass_id, node_id |
+| Unlock Premium | /api/004003 | pass_id |
+| Claim quest | /api/004004 | pass_id, quest_id |
+
+The pass is shared across Players and runs from Monday 00:00 to the following Monday in Asia/Ho_Chi_Minh.
+State includes the active pass ID, server timestamps, cumulative EXPBP, Premium ownership, six Free/Premium milestone pairs, and daily quest progress.
+Thresholds are 100, 200, 300, 400, 500, and 600 EXPBP.
+Premium costs 50 Gems once for the active season.
+The server resolves all prices, rewards, eligibility, and quest progress.
+
+Successful Static or Daily Shop purchases advance the daily purchase counter and purchased-XP counter in the same transaction as payment and the Shop receipt.
+First Trade requires one purchase and grants 100 EXPBP.
+Seasoned Trader requires three purchases and grants 150 EXPBP.
+Arcane Studies requires receiving 200 XP through Shop purchases and grants 100 EXPBP.
+Quests must be claimed manually.
+Quest claims add cumulative EXPBP, which is separate from Player XP and is retained when claiming milestones.
+Milestone rewards and Premium purchases do not advance Shop quests.
+
+Daily quest counters and claims reset at 00:00 Asia/Ho_Chi_Minh.
+A new weekly season resets EXPBP, Premium ownership, and claimed nodes while keeping Player Resources.
+Initialization and rollover occur lazily on requests using optimistic Player version checks.
+Existing Players with no Battle Pass data start at zero EXPBP.
+
+Each mutation requires X-Request-Id and returns pass, items, and resources.
+Quest items contain the awarded expbp, while resources remains the Player's Gold, Gems, and XP.
+Premium returns an empty items list after deducting Gems.
+All three mutation types share a receipt namespace scoped to Player and RequestId, binding the action, pass ID, and node or quest ID.
+The Player update and receipt are atomic.
+Identical retries return the original response even after a day or season boundary, and changed input returns REQUEST_ID_REUSED.
+Read current State and Resources after replaying an old receipt to display current values.
+
 ## Errors
 
 BusinessErrorProto contains code and message. Responses contain no exception/stack trace.
@@ -68,8 +107,8 @@ BusinessErrorProto contains code and message. Responses contain no exception/sta
 | 401 | AUTH_INVALID |
 | 408 | INVALID_REQUEST (request body timeout) |
 | 413 | INVALID_REQUEST (request body exceeds 64 KiB) |
-| 404 | OFFER_NOT_FOUND, ROUTE_NOT_FOUND |
-| 409 | IDENTITY_MISMATCH, REQUEST_ID_REUSED, INSUFFICIENT_FUNDS, OFFER_EXPIRED, PURCHASE_LIMIT, RETRY |
+| 404 | OFFER_NOT_FOUND, NODE_NOT_FOUND, QUEST_NOT_FOUND, ROUTE_NOT_FOUND |
+| 409 | IDENTITY_MISMATCH, REQUEST_ID_REUSED, INSUFFICIENT_FUNDS, OFFER_EXPIRED, PURCHASE_LIMIT, PREMIUM_REQUIRED, INSUFFICIENT_EXPBP, ALREADY_CLAIMED, ALREADY_PREMIUM, PASS_EXPIRED, QUEST_EXPIRED, QUEST_INCOMPLETE, RESOURCE_CAPACITY, RETRY |
 | 500 | INTERNAL_ERROR |
 
 RETRY: resend the same body/RequestId.

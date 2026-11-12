@@ -1,14 +1,14 @@
 # Mini game server
 
 Java 11 backend using Akka HTTP, Protobuf, Redis, and DynamoDB.
-Implemented flows cover login, Player Init, static/daily shop, and purchase.
+Implemented flows cover login, Player Init, static/daily shop, purchase, and weekly Battle Pass.
 
 ## Clone and initialize schemas
 
 Run these commands from the directory where you keep projects:
 
 ```bash
-git clone --recurse-submodules https://github.com/mudotet/mini-intern-server-project.git
+git clone --branch release/mobile-demo-2026-11-12 --recurse-submodules https://github.com/mudotet/mini-intern-server-project.git
 cd mini-intern-server-project
 git submodule status
 ```
@@ -21,7 +21,7 @@ git submodule status
 ```
 
 The schema submodule is at `server/src/main/proto` and points to the separate [canonical schema repository](https://github.com/mudotet/proto_mini-intern-server-project).
-The initial pinned revision is `06a40d0da3a6c14d79acaf0fc40be086a0ad93db`.
+This release pins revision `90b06fc283a1a6c3b47b41f4e48cb0c53e3e78f2`, including the mobile Battle Pass contract.
 Initialize the submodule before building; updating it without `--remote` checks out the revision recorded by this repository.
 
 ## Build and run

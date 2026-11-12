@@ -53,6 +53,24 @@ A Player's exchange of Gold or Gems for a ShopPackage's rewards under its applic
 **RequestId**:
 A client-assigned identity for one retryable operation. Reuse is valid only when the operation input is identical.
 
+**BattlePass**:
+A shared weekly season with Player-specific cumulative EXPBP, Premium ownership, and claimed Milestones.
+
+**EXPBP**:
+Experience earned by manually claiming completed Battle Pass Quests.
+It unlocks Milestones and remains separate from Player XP.
+
+**Milestone**:
+An EXPBP threshold with independent Free and Premium reward nodes.
+Claiming a node grants its Resources once per season without consuming EXPBP.
+
+**Premium**:
+A once-per-season Gem purchase that permits claiming reached Premium reward nodes.
+
+**BattlePassQuest**:
+A daily objective whose progress comes from successful Shop Purchases.
+Manually claiming a completed Quest grants EXPBP once for that day.
+
 ### Proto Tool
 
 **ProtoSchema**:
